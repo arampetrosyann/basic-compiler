@@ -12,3 +12,5 @@ gradle-app.setting
 .project
 
 .classpath
+
+.DS_Store
