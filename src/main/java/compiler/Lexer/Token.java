@@ -1,7 +1,6 @@
 package compiler.Lexer;
 
 public enum Token {
-    COMMENT, // $
     STRING,
     KEYWORD, // free final rec fun for while if else return int float bool array of string do
     FLOAT_NUMBER,
@@ -31,7 +30,6 @@ public enum Token {
     DOT, // .
     SEMI_COLON, // ;
     COMMA, // ,
-    WHITESPACE,
     IDENTIFIER, // ! - is a special built-in function
     EOF // end of file
 }

@@ -46,7 +46,7 @@ public class Lexer {
         map.put(new Regex(";"), new SymbolConfig(Token.SEMI_COLON, false));
         map.put(new Regex(","), new SymbolConfig(Token.COMMA, false));
         map.put(new Regex("!"), new SymbolConfig(Token.IDENTIFIER, true)); // built-in function(s)
-        map.put(new Regex("_?[a-zA-Z][a-zA-Z0-9]*"), new SymbolConfig(Token.IDENTIFIER, true));
+        map.put(new Regex("[_a-zA-Z][_a-zA-Z0-9]*"), new SymbolConfig(Token.IDENTIFIER, true));
 
         patternsSymbol = Collections.unmodifiableMap(map);
     }
