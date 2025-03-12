@@ -1,4 +1,4 @@
-import static org.junit.Assert.assertNotNull;
+import compiler.Parser.ParserException;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -6,15 +6,22 @@ import compiler.Lexer.Lexer;
 import compiler.Parser.Parser;
 import compiler.utils.parser.ASTNode;
 
+import static org.junit.Assert.assertThrows;
+
 public class TestParser {
-        private ASTNode parse(String input) {
+        private ASTNode parse(String input) throws ParserException {
             StringReader reader = new StringReader(input);
             Lexer lexer = new Lexer(reader);
             Parser parser = new Parser(lexer);
-            ASTNode ast = parser.getAST();
-            assertNotNull(ast);
-            System.out.println(ast);
-            return ast;
+            return parser.getAST();
+        }
+
+        private void parseWithError(String input) {
+            ParserException exception = assertThrows(ParserException.class, () -> {
+                parse(input);
+            });
+
+            System.out.println("Caught exception: " + exception.getMessage() + " for input: " + input);
         }
         
         @Test
@@ -110,10 +117,6 @@ public class TestParser {
         @Test
         public void testUnaryExpression() {
             parse("z = -x;");
-        }
-
-        @Test
-        public void testUnaryExpression2() {
             parse("z bool = !(x);");
         }
 
@@ -124,17 +127,17 @@ public class TestParser {
 
         @Test
         public void testVariableDeclaration() {
+            parse("x int;");
+        }
+
+        @Test
+        public void testVariableDeclarationWithAssignment() {
             parse("a int = 10;");
         }
 
         @Test
         public void testFinalVariableDeclaration() {
             parse("final b float = 10.0;");
-        }
-
-        @Test
-        public void testVariableDeclaration2() {
-            parse("x int;");
         }
 
         @Test
@@ -178,4 +181,62 @@ public class TestParser {
         public void testSemanticError() {
             parse("a int = \"Hello\";");
         }
+
+        @Test
+        public void testVariableAssignmentError(){
+            parseWithError("a int 10;");
+        }
+
+        @Test
+        public void testVariableDeclarationError(){
+            parseWithError("int a;");
+        }
+
+        @Test
+        public void testMissingSemiColonError(){
+            parseWithError("a int = 6");
+        }
+
+        @Test
+        public void testMissingClosingParenthesesError(){
+            parseWithError("a = (5;");
+        }
+
+        @Test
+        public void testMissingClosingBraceError(){
+            parseWithError("{ a = 5;");
+        }
+
+        @Test
+        public void testMissingClosingBracketError(){
+            parseWithError("a[5 = 10;");
+        }
+
+        @Test
+        public void testMissingRecordFieldError(){
+            parseWithError("person. = \"John\";");
+        }
+
+        @Test
+        public void testMissingRecordKeywordError(){
+            parseWithError("Person {");
+        }
+
+        @Test
+        public void testWhileLoopError(){
+            parseWithError("while { x = x + 1; ");
+        }
+
+        @Test
+        public void testForLoopError(){
+            parseWithError("for (i, 1, 10) { writeln(i); }");
+        }
+
+        @Test
+        public void testArrayCreationError(){
+            parseWithError("a bool[] = array [2] of;");
+            parseWithError("a bool[] = array [] of bool");
+            parseWithError("a bool[] = [2] of bool");
+        }
+
 }
