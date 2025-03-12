@@ -12,7 +12,7 @@ public class Parser {
     private final Lexer lexer;
     private Symbol lookahead;
 
-    public Parser(Lexer lexer) throws ParserException {
+    public Parser(Lexer lexer) {
         this.lexer = lexer;
         this.lookahead = lexer.getNextSymbol();
     }
