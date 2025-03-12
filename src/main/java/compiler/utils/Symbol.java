@@ -1,4 +1,4 @@
-package compiler.Lexer;
+package compiler.utils;
 
 public class Symbol {
     private final Token token;

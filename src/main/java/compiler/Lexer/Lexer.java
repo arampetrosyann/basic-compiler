@@ -1,6 +1,8 @@
 package compiler.Lexer;
 
 import compiler.Regex;
+import compiler.utils.Symbol;
+import compiler.utils.Token;
 
 import java.io.*;
 import java.util.*;
@@ -45,7 +47,7 @@ public class Lexer {
         map.put(new Regex("\\."), new SymbolConfig(Token.DOT, false));
         map.put(new Regex(";"), new SymbolConfig(Token.SEMI_COLON, false));
         map.put(new Regex(","), new SymbolConfig(Token.COMMA, false));
-        map.put(new Regex("!"), new SymbolConfig(Token.IDENTIFIER, true)); // built-in function(s)
+        map.put(new Regex("!"), new SymbolConfig(Token.LOGICAL_NOT, true));
         map.put(new Regex("[_a-zA-Z][_a-zA-Z0-9]*"), new SymbolConfig(Token.IDENTIFIER, true));
 
         patternsSymbol = Collections.unmodifiableMap(map);
