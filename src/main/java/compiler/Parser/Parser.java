@@ -7,6 +7,7 @@ import compiler.utils.parser.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Parser {
     private final Lexer lexer;
@@ -244,6 +245,7 @@ public class Parser {
                 yield parseVariableDeclaration(identifier, true);
             }
             case "free" -> parseFreeStatement();
+            case "do" -> parseDoWhileLoop();
             default -> throw new ParserException("Unexpected keyword: " + keyword);
         };
     }
@@ -258,6 +260,20 @@ public class Parser {
         Block body = parseBlock();
         return new WhileLoop(condition, body);
     }
+
+    private Statement parseDoWhileLoop() throws ParserException {
+        matchKeyword("do");
+        Block body = parseBlock();
+
+        matchKeyword("while");
+        match(Token.OPEN_PARENTHESIS);
+        Expression condition = parseLogicalOr();
+        match(Token.CLOSE_PARENTHESIS);
+        match(Token.SEMI_COLON);
+
+        return new DoWhileLoop(condition, body);
+    }
+
 
     private Statement parseForLoop() throws ParserException {
         matchKeyword("for");
@@ -404,7 +420,7 @@ public class Parser {
     }
 
     private Expression parseUnary() throws ParserException {
-        if (lookahead.getToken() == Token.SUBTRACT || lookahead.getToken() == Token.LOGICAL_NOT) {
+        if (lookahead.getToken() == Token.SUBTRACT || Objects.equals(lookahead.getValue(), "!")) {
             Token operator = lookahead.getToken();
             match(operator);
             Expression operand = parseUnary();

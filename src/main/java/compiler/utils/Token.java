@@ -27,7 +27,6 @@ public enum Token {
     CLOSE_SQUARE_BRACKET, // ]
     LOGICAL_AND, // &&
     LOGICAL_OR, // ||
-    LOGICAL_NOT, // !
     DOT, // .
     SEMI_COLON, // ;
     COMMA, // ,

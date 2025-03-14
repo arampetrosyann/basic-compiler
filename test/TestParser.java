@@ -239,4 +239,20 @@ public class TestParser {
             parseWithError("a bool[] = [2] of bool");
         }
 
+        @Test
+        public void testDoWhileLoop() {
+            parse("do { x = x + 1; } while (x < 10);");
+        }
+
+        @Test
+        public void testDoWhileLoopWithBlock() {
+            parse("do { x = x + 1; y = y * 2; } while (x < y);");
+        }
+
+        @Test
+        public void testDoWhileLoopError() {
+            parseWithError("do { x = x + 1; } while x < 10;");
+        }
+
+
 }
