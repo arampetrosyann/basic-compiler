@@ -1,303 +1,305 @@
-$ Source is a single file. No imports, etc.
+$ Source is a single file. No imports, etc. 
 
-$ Comments look like this. No block comments.
+$ Comments look like this. No block comments. 
 
-$ The language is strongly and statically typed.
+$ The language is strongly and statically typed. 
 
-$ Base types are:
+$ Base types are:  
 
-$    int (signed 32-bit),
+$    int (signed 32-bit), 
 
-$    float (32-bit),
+$    float (32-bit),  
 
-$    bool (true/false),
+$    bool (true/false),  
 
-$    string.
+$    string. 
 
-$ int values are automatically promoted to float values in mixed expressions.
+$ int values are automatically promoted to float values in mixed expressions. 
 
-$ There is no dedicated char type. Characters are represented by integers.
+$ There is no dedicated char type. Characters are represented by integers. 
 
-$ Strings are immutable.
+$ Strings are immutable. 
 
+  
 
+$ Operations: 
 
-$ Operations:
+$  For int and float, available operations are 
 
-$  For int and float, available operations are
+$      +, -, * , /, - (unary). 
 
-$      +, -, * , /, - (unary).
+$      ==, !=, <, >, <=, >= 
 
-$      ==, !=, <, >, <=, >=
+$  For int: 
 
-$  For int:
+$      % 
 
-$      %
+$  For boolean: 
 
-$  For boolean:
+$      && (and operator), || (or operator), ==, != 
 
-$      && (and operator), || (or operator), ==, !=
+$  For strings 
 
-$  For strings
+$      + (concatenation), ==, != 
 
-$      + (concatenation), ==, !=
+$  The i-th characters/element in a string/array can be read by the index operator [i]. 
 
-$  The i-th characters/element in a string/array can be read by the index operator [i].
+  
 
+$ Built-in functions: 
 
+$      !(bool)            : negates a boolean value, returns a boolean value 
 
-$ Built-in functions:
+$      chr(int)           : turns the character (an int value) into a string, returns a string 
 
-$      !(bool)            : negates a boolean value, returns a boolean value
+$      len(string or array)  : gives the length of a string or array, returns an integer 
 
-$      chr(int)           : turns the character (an int value) into a string, returns a string
+$      floor(float)    : returns the largest integer less than or equal the float value 
 
-$      len(string or array)  : gives the length of a string or array, returns an integer
+$ Exceptions: 
 
-$      floor(float)    : returns the largest integer less than or equal the float value
+$ Run-time errors terminate the running program. 
 
-$ Exceptions:
+$ Can happen when: 
 
-$ Run-time errors terminate the running program.
+$    Out of memory 
 
-$ Can happen when:
+$    Division by zero 
 
-$    Out of memory
+$    Out-of-bounds array and string access 
 
-$    Division by zero
+$    float->int overflow error 
 
-$    Out-of-bounds array and string access
+  
 
-$    float->int overflow error
+$ Operator precedence: 
 
+$     function and constructor calls 
 
+$     parenthesis 
 
-$ Operator precedence:
+$     index operator 
 
-$     function and constructor calls
+$     record field access operator . 
 
-$     parenthesis
+$     *,/,% 
 
-$     index operator
+$     +,-, unary - 
 
-$     record field access operator .
+$     ==, !=, <, >, <=, >= 
 
-$     *,/,%
+$     &&, || 
 
-$     +,-, unary -
+$ Operators with same precedence are left-associative. 
 
-$     ==, !=, <, >, <=, >=
+ 
 
-$     &&, ||
+$ Constants must be declared at the top of the source file. 
 
-$ Operators with same precedence are left-associative.
+$ Constant declarations can use expressions and other constants that 
 
+$ have been declared earlier. Only base types can be used for constants. 
 
+  
 
-$ Constants must be declared at the top of the source file.
+final i int = 3; 
 
-$ Constant declarations can use expressions and other constants that
+final j float = 3.2*5.0; 
 
-$ have been declared earlier. Only base types can be used for constants.
+final k int = i*3; 
 
+final message string = "Hello"; 
 
+final isEmpty bool = true; 
 
-final i int = 3;
+  
 
-final j float = 3.2*5.0;
+$ Constant declarations are followed by record definitions. 
 
-final k int = i*3;
+Point rec { 
 
-final message string = "Hello";
+    x int; 
 
-final isEmpty bool = true;
+    y int; 
 
+} 
 
+Person rec{ 
 
-$ Constant declarations are followed by record definitions.
+    name string; 
 
-Point rec {
+    location Point; 
 
-    x int;
+    history int[]; 
 
-    y int;
+} 
 
-}
+  
 
-Person rec{
+$ Global variables are initialised in the order in which they appear. 
 
-    name string;
+$ Accessing a variable that is not initialised (for example, by calling a function in the initialiser expression) 
 
-    location Point;
+$ a function in the initialiser expression that accesses a global variable before it has been initialised results in undefined behaviour. 
 
-    history int[];
+a int = 3; 
 
-}
+$ For arrays, only one-dimensional arrays are allowed. 
 
+$ To initialise array or record variables, they must be assigned to an existing record or array, or a new array or record must be created. 
 
+c int[] = array [5] of int;  $ new array of length 5 
 
-$ Global variables are initialised in the order in which they appear.
+d Person= Person("me", Point(3,7), array [i*2] of int);  $ new record 
 
-$ Variables always have an initialiser, which can be an expression.
+  
 
-$ Accessing a variable that is not initialised (for example, by calling a function in the initialiser expression)
+$ Functions: 
 
-$ a function in the initialiser expression that accesses a global variable before it has been initialised results in undefined behaviour.
+$ Functions have parameters and a return type. The return type 
 
-a int = 3;
+$ can be a type or void (in which case nothing is indicated). 
 
-$ For arrays, only one-dimensional arrays are allowed.
+$ Base type arguments are always passed by value. 
 
-$ To initialise array or record variables, they must be assigned to an existing record or array, or a new array or record must be created.
+$ Records and arrays are always passed by reference. 
 
-c int[] = array [5] of int;  $ new array of length 5
+$ There are built-in functions for I/O: 
 
-d Person= Person("me", Point(3,7), array [i*2] of int);  $ new record
+$  readInt, readFloat, readString, writeInt, writeFloat, write, writeln 
 
+$ all "read" functions take nothing as argument, as they read for the standard input, and return the type specified. All “write” functions print on the standard output (they can be seen as print functions). 
 
+$ "writeInt" and "writeFloat" take an "int" and "float" as argument respectively, and return nothing or True/False if it succeeded or not (to be decided at the code generation phase; for now you can make an arbitrary choice). 
 
-$ Functions:
+$ "write" and "writeln" can take anything as argument (including any primitive type). "writeln" will add an end-of-line at the end of what is written. The output is the same as the other "write" functions 
 
-$ Functions have parameters and a return type. The return type
+$ Hint: writeFloat should accept “-a” as an argument, where “a” is a float variable.  
 
-$ can be a type or void (in which case nothing is indicated).
+$ Function calls can forward-reference functions, even in initialisers of global 
 
-$ Base type arguments are always passed by value.
+$ variables, but not in constants. 
 
-$ Records and arrays are always passed by reference.
+  
 
-$ There are built-in functions for I/O:
+$ Local variables: 
 
-$  readInt, readFloat, readString, writeInt, writeFloat, write, writeln
+$ Functions and while/if/else/for blocks can declare local variables and values 
 
-$ all "read" functions take nothing as argument, as they read for the standard input, and return the type specified. All “write” functions print on the standard output (they can be seen as print functions).
+$ mixed with statements. 
 
-$ "writeInt" and "writeFloat" take an "int" and "float" as argument respectively, and return nothing or True/False if it succeeded or not (to be decided at the code generation phase; for now you can make an arbitrary choice).
+$ Their initialisation follows the same rules as for global variables. 
 
-$ "write" and "writeln" can take anything as argument (including any primitive type). "writeln" will add an end-of-line at the end of what is written. The output is the same as the other "write" functions
+  
 
-$ Hint: writeFloat should accept “-a” as an argument, where “a” is a float variable.
+$ Scope: 
 
-$ Function calls can forward-reference functions, even in initialisers of global
+$ Lexical scoping. 
 
-$ variables, but not in constants.
+$ Local variables can shadow variables with the same name in surrounding scopes. 
 
+$ Keywords, types, functions, constants, and variables share one name space. 
 
+$ All names are case sensitive. 
 
-$ Local variables:
+  
 
-$ Functions and while/if/else/for blocks can declare local variables and values
+$ Control structures: 
 
-$ mixed with statements.
+$ for, while, if/else 
 
-$ Their initialisation follows the same rules as for global variables.
+$ Control structures bodies are always block statements. 
 
+$ "If" can be used with an "else" control block or without.
+ 
+$ The "for" control structure takes four arguments : an initialised variable, the initial value of this variable, the maximum value of this variable, and the increment between each loop. It can be an integer, a float, or a double."
 
+  
 
-$ Scope:
+$ The left side of an assignment must be either: 
 
-$ Lexical scoping.
+$    a variable 
 
-$ Local variables can shadow variables with the same name in surrounding scopes.
+$    an element of an array 
 
-$ Keywords, types, functions, constants, and variables share one name space.
+$         a[3] = 1234;   $ a is an array of int 
 
-$ All names are case sensitive.
+$    a field access to a record such as: 
 
+$         a.x = 123; 
 
+$         a[3].x = 12; 
 
-$ Control structures:
+$    To simplify the compiler, the left side cannot be an expression, this is not allowed: 
 
-$ for, while, if/else
+$         someFunctionThatReturnsAnArray()[2] = 2; 
 
-$ Control structures bodies are always block statements.
+$    Assigning an array or record copies the reference. 
 
+ 
 
+$ Deallocating arrays and records: 
 
-$ The left side of an assignment must be either:
+$ We assume that there is no garbage collector and that the created 
 
-$    a variable
+$ arrays and records have to be manually deallocated when not needed anymore. 
 
-$    an element of an array
+$       x Point = Point(3,5); 
 
-$         a[3] = 1234;   $ a is an array of int
+$       free x; 
 
-$    a field access to a record such as:
+$ Accessing a deallocated array or record results in undefined behavior. 
 
-$         a.x = 123;
+$ Deallocation is not deep. Before a record is deallocated, it is the duty 
 
-$         a[3].x = 12;
+$ of the programmer to deallocate arrays or records referenced by that record. 
 
-$    To simplify the compiler, the left side cannot be an expression, this is not allowed:
+                                          
 
-$         someFunctionThatReturnsAnArray()[2] = 2;
+fun square(int v) int { 
 
-$    Assigning an array or record copies the reference.
+    return v*v; 
 
+} 
 
+  
 
-$ Deallocating arrays and records:
+fun copyPoints(Point[] p) Point { 
 
-$ We assume that there is no garbage collector and that the created
+    return Point(p[0].x+p[1].x, p[0].y+p[1].y); 
 
-$ arrays and records have to be manually deallocated when not needed anymore.
+} 
 
-$       x Point = Point(3,5);
+                             
 
-$       free x;
+fun main() { 
 
-$ Accessing a deallocated array or record results in undefined behavior.
+    value int = readInt();                              
 
-$ Deallocation is not deep. Before a record is deallocated, it is the duty
+    writeln(square(value)); 
 
-$ of the programmer to deallocate arrays or records referenced by that record.
+    i int; 
 
+    for (i, 1, 100, 1) { 
 
+        while (value!=3) { 
 
-fun square(int v) int {
+            if (i > 10){ 
 
-    return v*v;
+                $ .... 
 
-}
+            } else { 
 
+                $ .... 
 
+            } 
 
-fun copyPoints(Point[] p) Point {
+        } 
 
-    return Point(p[0].x+p[1].x, p[0].y+p[1].y);
+    } 
 
-}
+     
 
+    i = (i+2)*2; 
 
-
-fun main() {
-
-    value int = readInt();
-
-    writeln(square(value));
-
-    i int;
-
-    for (i, 1, 100, 1) {
-
-        while (value!=3) {
-
-            if (i > 10){
-
-                $ ....
-
-            } else {
-
-                $ ....
-
-            }
-
-        }
-
-    }
-
-
-
-    i = (i+2)*2;
-
-}
+} 
