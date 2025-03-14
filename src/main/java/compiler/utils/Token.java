@@ -1,4 +1,4 @@
-package compiler.Lexer;
+package compiler.utils;
 
 public enum Token {
     STRING,
@@ -30,6 +30,6 @@ public enum Token {
     DOT, // .
     SEMI_COLON, // ;
     COMMA, // ,
-    IDENTIFIER, // ! - is a special built-in function
+    IDENTIFIER,
     EOF // end of file
 }

@@ -1,6 +1,8 @@
 package compiler.Lexer;
 
 import compiler.Regex;
+import compiler.utils.Symbol;
+import compiler.utils.Token;
 
 import java.io.*;
 import java.util.*;
