@@ -1,19 +1,18 @@
-import compiler.Parser.ParserException;
 import org.junit.Test;
-
 import java.io.StringReader;
+
+import compiler.Exceptions.ParserException;
 import compiler.Lexer.Lexer;
 import compiler.Parser.Parser;
-import compiler.utils.parser.ASTNode;
 
 import static org.junit.Assert.assertThrows;
 
 public class TestParser {
-        private ASTNode parse(String input) throws ParserException {
+        private void parse(String input) throws ParserException {
             StringReader reader = new StringReader(input);
             Lexer lexer = new Lexer(reader);
             Parser parser = new Parser(lexer);
-            return parser.getAST();
+            parser.getAST();
         }
 
         private void parseWithError(String input) {
@@ -23,7 +22,7 @@ public class TestParser {
 
             System.out.println("Caught exception: " + exception.getMessage() + " for input: " + input);
         }
-        
+
         @Test
         public void testSimpleAssignment() {
             parse("x = 5;");
@@ -253,6 +252,4 @@ public class TestParser {
         public void testDoWhileLoopError() {
             parseWithError("do { x = x + 1; } while x < 10;");
         }
-
-
 }

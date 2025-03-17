@@ -1,15 +1,16 @@
 package compiler.Parser;
 
+import compiler.Exceptions.ParserException;
 import compiler.Lexer.Lexer;
-import compiler.utils.Symbol;
-import compiler.utils.Token;
-import compiler.utils.parser.*;
+import compiler.Components.Symbol;
+import compiler.Components.Token;
+import compiler.Components.Blocks.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class Parser {
+public class  Parser {
     private final Lexer lexer;
     private Symbol lookahead;
 
@@ -20,7 +21,7 @@ public class Parser {
 
     private Symbol match(Token expectedToken) throws ParserException {
         if(lookahead.getToken() != expectedToken) {
-            throw new ParserException("Expected " + expectedToken + " but found " + lookahead.getToken());
+            throw new ParserException("Expected " + expectedToken + " but found " + lookahead.getToken(), lookahead.getLineNumber());
         } else {
             Symbol matchingSymbol = lookahead;
             lookahead = lexer.getNextSymbol();
@@ -30,7 +31,7 @@ public class Parser {
 
     private Symbol matchKeyword(String expectedKeyword) throws ParserException {
         if (lookahead.getToken() != Token.KEYWORD || !lookahead.getValue().equals(expectedKeyword)) {
-            throw new ParserException("Expected keyword '" + expectedKeyword + "' but found '" + lookahead.getValue() + "'");
+            throw new ParserException("Expected keyword '" + expectedKeyword + "' but found '" + lookahead.getValue() + "'", lookahead.getLineNumber());
         }
 
         Symbol matchedSymbol = lookahead;
@@ -49,14 +50,14 @@ public class Parser {
                 match(Token.KEYWORD);
                 baseType = new Type(typeName);
             } else {
-                throw new ParserException("Invalid type: " + typeName);
+                throw new ParserException("Invalid type: " + typeName, lookahead.getLineNumber());
             }
         } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // Handle user-defined types (record)
             Symbol identifier = match(Token.IDENTIFIER);
             baseType = new Type(identifier.getValue());
         } else {
-            throw new ParserException("Invalid type: " + lookahead.getValue());
+            throw new ParserException("Invalid type: " + lookahead.getValue(), lookahead.getLineNumber());
         }
 
         // Check if it's an array type
@@ -105,14 +106,14 @@ public class Parser {
         Type type;
 
         if (lookahead.getToken() == Token.KEYWORD) {
-            // Primitive type (int, float, etc.)
+            // Primitive type
             type = parseType();
-        } else if (lookahead.getToken() == Token.IDENTIFIER) {
-            // User-defined record type (Person, Point, etc.)
+        } else if (lookahead.getToken() == Token.IDENTIFIER && Character.isUpperCase(lookahead.getValue().charAt(0))) {
+            // User-defined record type
             Symbol recordName = match(Token.IDENTIFIER);
             type = new Type(recordName.getValue());
         } else {
-            throw new ParserException("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken());
+            throw new ParserException("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken(), lookahead.getLineNumber());
         }
 
         Expression value = null;
@@ -170,7 +171,7 @@ public class Parser {
                 return parseVariableDeclaration(identifier, false);
             }
 
-            throw new ParserException("Unexpected token after identifier: " + lookahead.getToken());
+            throw new ParserException("Unexpected token after identifier: " + lookahead.getToken(), lookahead.getLineNumber());
         }
 
         switch (lookahead.getToken()) {
@@ -187,7 +188,7 @@ public class Parser {
                 return parseBlock();
 
             default:
-                throw new ParserException("Unexpected token: " + lookahead.getToken());
+                throw new ParserException("Unexpected token: " + lookahead.getToken(), lookahead.getLineNumber());
         }
     }
 
@@ -228,7 +229,7 @@ public class Parser {
             match(Token.SEMI_COLON);
             return new FunctionCall(identifier.getValue(), arguments);
         } else {
-            throw new ParserException("Invalid statement: " + identifier.getValue());
+            throw new ParserException("Invalid statement: " + identifier.getValue(), identifier.getLineNumber());
         }
     }
 
@@ -246,7 +247,7 @@ public class Parser {
             }
             case "free" -> parseFreeStatement();
             case "do" -> parseDoWhileLoop();
-            default -> throw new ParserException("Unexpected keyword: " + keyword);
+            default -> throw new ParserException("Unexpected keyword: " + keyword, lookahead.getLineNumber());
         };
     }
 
@@ -467,7 +468,7 @@ public class Parser {
                 if (lookahead.getValue().equals("array")) {
                     return parseArrayCreation();
                 }
-                throw new ParserException("Unexpected keyword in expression: " + lookahead.getValue());
+                throw new ParserException("Unexpected keyword: " + lookahead.getValue(), lookahead.getLineNumber());
 
             case Token.OPEN_PARENTHESIS:
                 match(Token.OPEN_PARENTHESIS);
@@ -476,7 +477,7 @@ public class Parser {
                 return expression;
 
             default:
-                throw new ParserException("Unexpected token in expression: " + lookahead.getToken());
+                throw new ParserException("Unexpected token: " + lookahead.getToken(), lookahead.getLineNumber());
         }
     }
 
@@ -558,5 +559,4 @@ public class Parser {
 
         return root;
     }
-
 }

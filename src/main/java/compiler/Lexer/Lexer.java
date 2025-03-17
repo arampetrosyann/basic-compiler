@@ -1,8 +1,9 @@
 package compiler.Lexer;
 
+import compiler.Exceptions.LexerException;
 import compiler.Regex;
-import compiler.utils.Symbol;
-import compiler.utils.Token;
+import compiler.Components.Symbol;
+import compiler.Components.Token;
 
 import java.io.*;
 import java.util.*;
@@ -11,7 +12,7 @@ public class Lexer {
     private final PushbackReader input;
 
     private char currentCharacter;
-    private int currentLine = 0;
+    private int currentLine = 1;
     private boolean isComplete = false;
 
     private record SymbolConfig(Token token, boolean includeValue) {}
@@ -75,7 +76,7 @@ public class Lexer {
                 input.unread(str.charAt(i));
             }
         } catch (IOException e) {
-            throw new RuntimeException("IO exception during push back");
+            throw new LexerException("IO exception during push back");
         }
     }
 
@@ -92,12 +93,12 @@ public class Lexer {
 
             if (currentCharacter == '\n') currentLine++;
         } catch (IOException e) {
-            throw new RuntimeException("IO exception while reading a character");
+            throw new LexerException("IO exception while reading a character", currentLine);
         }
     }
     
     public Symbol getNextSymbol() {
-        if (isComplete) return new Symbol(Token.EOF);
+        if (isComplete) return new Symbol(Token.EOF, currentLine);
 
         // skip whitespaces and comments
         while (Character.isWhitespace(currentCharacter) || currentCharacter == '$') {
@@ -107,7 +108,7 @@ public class Lexer {
                 readChar();
             }
 
-            if (isComplete) return new Symbol(Token.EOF);
+            if (isComplete) return new Symbol(Token.EOF, currentLine);
         }
 
         StringBuilder lexeme = new StringBuilder(String.valueOf(currentCharacter));
@@ -129,7 +130,7 @@ public class Lexer {
 
             readChar();
 
-            return new Symbol(Token.STRING, lexeme.toString());
+            return new Symbol(Token.STRING, currentLine, lexeme.toString());
         }
 
         readChar();
@@ -144,7 +145,7 @@ public class Lexer {
             if (pattern.matches(currentLexeme)) {
                 SymbolConfig conf = patternsSymbol.get(pattern);
 
-                candidateSymbol = new Symbol(conf.token, conf.includeValue ? currentLexeme : null);
+                candidateSymbol = new Symbol(conf.token, currentLine, conf.includeValue ? currentLexeme : null);
                 candidateLength = currentLexeme.length();
 
                 break;
@@ -161,7 +162,7 @@ public class Lexer {
                 if (pattern.matches(currentLexeme)) {
                     SymbolConfig conf = patternsSymbol.get(pattern);
 
-                    candidateSymbol = new Symbol(conf.token, conf.includeValue ? currentLexeme : null);
+                    candidateSymbol = new Symbol(conf.token, currentLine, conf.includeValue ? currentLexeme : null);
                     candidateLength = currentLexeme.length();
 
                     stillMatches = true;
