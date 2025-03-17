@@ -2,7 +2,7 @@ package compiler;
 
 import compiler.Lexer.Lexer;
 import compiler.Parser.Parser;
-import compiler.utils.parser.ASTNodeImpl;
+import compiler.Components.Blocks.ASTNodeImpl;
 
 import java.io.*;
 import java.util.Objects;
@@ -28,23 +28,22 @@ public class Compiler {
             content.append(line).append("\n");
         }
 
-        if (Objects.equals(mode, "-lexer")) {
+        try {
             Lexer lexer = new Lexer(new StringReader(content.toString()));
 
-            while (!lexer.isComplete()) {
-                System.out.println(lexer.getNextSymbol());
+            if (Objects.equals(mode, "-lexer")) {
+                while (!lexer.isComplete()) {
+                    System.out.println(lexer.getNextSymbol());
+                }
             }
-        }
-        else if (Objects.equals(mode, "-parser")) {
-            Lexer lexer = new Lexer(new StringReader(content.toString()));
-            Parser parser;
-            try {
-                parser = new Parser(lexer);
+            else if (Objects.equals(mode, "-parser")) {
+                Parser parser = new Parser(lexer);
+
                 ASTNodeImpl ast = parser.getAST();
                 ast.printAST(0);
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
             }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
     }
 }
