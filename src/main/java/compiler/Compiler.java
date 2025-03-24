@@ -28,22 +28,18 @@ public class Compiler {
             content.append(line).append("\n");
         }
 
-        try {
-            Lexer lexer = new Lexer(new StringReader(content.toString()));
+        Lexer lexer = new Lexer(new StringReader(content.toString()));
 
-            if (Objects.equals(mode, "-lexer")) {
-                while (!lexer.isComplete()) {
-                    System.out.println(lexer.getNextSymbol());
-                }
+        if (Objects.equals(mode, "-lexer")) {
+            while (!lexer.isComplete()) {
+                System.out.println(lexer.getNextSymbol());
             }
-            else if (Objects.equals(mode, "-parser")) {
-                Parser parser = new Parser(lexer);
+        }
+        else if (Objects.equals(mode, "-parser")) {
+            Parser parser = new Parser(lexer);
 
-                ASTNodeImpl ast = parser.getAST();
-                ast.printAST(0);
-            }
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
+            ASTNodeImpl ast = parser.getAST();
+            ast.printAST(0);
         }
     }
 }
