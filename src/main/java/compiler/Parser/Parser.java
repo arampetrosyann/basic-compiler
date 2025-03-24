@@ -71,8 +71,8 @@ public class  Parser {
     }
 
     private Param parseParam() throws ParserException {
-        Type type = parseType();
         Symbol identifier = match(Token.IDENTIFIER);
+        Type type = parseType();
         return new Param(type, identifier.getValue());
     }
 

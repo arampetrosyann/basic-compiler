@@ -60,12 +60,12 @@ public class TestParser {
 
         @Test
         public void testFunctionDeclaration() {
-            parse("fun add(int a, int b) int { return a + b; }");
+            parse("fun add(a int, b int) int { return a + b; }");
         }
 
         @Test
         public void testFunctionWithoutReturnType() {
-            parse("fun writeInt(int a) { writeln(a); }");
+            parse("fun writeInt(a int) { writeln(a); }");
         }
 
         @Test
