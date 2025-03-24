@@ -16,7 +16,7 @@ public class VariableDeclaration implements Statement{
     @Override
     public ASTNodeImpl toASTNode() {
         ASTNodeImpl node = new ASTNodeImpl("VariableDeclaration", null);
-        node.addChild(new ASTNodeImpl("Type", type.getIdentifier()));
+        node.addChild(type.toASTNode());
         node.addChild(new ASTNodeImpl("Identifier", identifier));
         node.addChild(value != null ? value.toASTNode() : new ASTNodeImpl("Value", null));
         node.addChild(new ASTNodeImpl("Final", isFinal ? "true" : "false"));

@@ -12,10 +12,7 @@ public class Param implements ASTNode {
     @Override
     public ASTNodeImpl toASTNode() {
         ASTNodeImpl node = new ASTNodeImpl("Param", null);
-
-        ASTNodeImpl typeNode = new ASTNodeImpl("Type", null);
-        typeNode.addChild(type.toASTNode());
-        node.addChild(typeNode);
+        node.addChild(type.toASTNode());
 
         node.addChild(new ASTNodeImpl("Identifier", name));
         return node;

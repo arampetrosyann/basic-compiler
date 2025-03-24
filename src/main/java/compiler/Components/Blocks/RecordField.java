@@ -11,7 +11,7 @@ public class RecordField {
 
     public ASTNodeImpl toASTNode() {
         ASTNodeImpl node = new ASTNodeImpl("Field", name);
-        node.addChild(new ASTNodeImpl("Type", type.getIdentifier()));
+        node.addChild(type.toASTNode());
         return node;
     }
 }

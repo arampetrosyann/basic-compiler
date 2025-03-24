@@ -13,6 +13,6 @@ public class Type implements ASTNode {
 
     @Override
     public ASTNodeImpl toASTNode() {
-        return new ASTNodeImpl("Identifier", identifier);
+        return new ASTNodeImpl("Type", identifier);
     }
 }

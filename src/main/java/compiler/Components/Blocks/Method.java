@@ -20,9 +20,7 @@ public class Method implements ASTNode {
         ASTNodeImpl node = new ASTNodeImpl("Method", name);
 
         if(returnType != null) {
-            ASTNodeImpl returnTypeNode = new ASTNodeImpl("ReturnType", null);
-            returnTypeNode.addChild(returnType.toASTNode());
-            node.addChild(returnTypeNode);
+            node.addChild(returnType.toASTNode());
         } else {
             node.addChild(new ASTNodeImpl("ReturnType", "void"));
         }
