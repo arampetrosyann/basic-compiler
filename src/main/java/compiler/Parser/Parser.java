@@ -52,7 +52,7 @@ public class  Parser {
             } else {
                 throw new ParserException("Invalid type: " + typeName, lookahead.getLineNumber());
             }
-        } else if (lookahead.getToken() == Token.IDENTIFIER) {
+        } else if (lookahead.getToken() == Token.IDENTIFIER && Character.isUpperCase(lookahead.getValue().charAt(0))) {
             // Handle user-defined types (record)
             Symbol identifier = match(Token.IDENTIFIER);
             baseType = new Type(identifier.getValue());
