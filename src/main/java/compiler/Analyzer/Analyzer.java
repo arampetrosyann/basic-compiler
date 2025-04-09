@@ -118,20 +118,17 @@ public class Analyzer {
     }
 
     public void check(Method elem) {
-        // Create a new scope for the method
         SymbolTable methodScope = new SymbolTable(SymbolTableType.SCOPE, currentScope);
         currentScope = methodScope;
 
-        // Insert parameters into the method scope
         for (Param param : elem.getParameters()) {
             VarType paramType = new PrimitiveType(TypeName.valueOf(param.getType().getIdentifier().toUpperCase()));
             currentScope.insert(param.getName(), paramType);
         }
 
-        // Analyze the method body
+        // Analyze body
         elem.getBody().accept(this);
 
-        // Restore the previous scope
         currentScope = currentScope.getParent();
     }
 
@@ -139,7 +136,7 @@ public class Analyzer {
         if (globalTable.lookup(elem.getName()) != null) {
             throw new RecordError("RecordError: Record " + elem.getName() + " already exists.");
         }
-        // Register the new record type
+
         Map<String, VarType> fields = new HashMap<>();
         for (RecordField field : elem.getFields()) {
             fields.put(field.getName(), new PrimitiveType(TypeName.valueOf(field.getType().getIdentifier().toUpperCase())));
