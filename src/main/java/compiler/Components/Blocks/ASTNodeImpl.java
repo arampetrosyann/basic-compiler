@@ -1,5 +1,7 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,5 +50,10 @@ public class ASTNodeImpl implements ASTNode {
     @Override
     public ASTNodeImpl toASTNode() {
         return this;
+    }
+
+    @Override
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

@@ -1,20 +1,28 @@
 package compiler.Components.Blocks;
 
-public class Param implements ASTNode {
+public class Param extends ASTNodeImpl {
     private final Type type;
     private final String name;
 
     public Param(Type type, String name) {
+        super("Param", null);
         this.type = type;
         this.name = name;
     }
 
-    @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("Param", null);
-        node.addChild(type.toASTNode());
+    public String getName() {
+        return name;
+    }
 
-        node.addChild(new ASTNodeImpl("Identifier", name));
-        return node;
+    public Type getType() {
+        return type;
+    }
+
+    @Override
+    public Param toASTNode() {
+        addChild(type.toASTNode());
+        addChild(new ASTNodeImpl("Identifier", name));
+
+        return this;
     }
 }

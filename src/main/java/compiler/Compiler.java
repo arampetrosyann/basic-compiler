@@ -1,5 +1,6 @@
 package compiler;
 
+import compiler.Analyzer.Analyzer;
 import compiler.Lexer.Lexer;
 import compiler.Parser.Parser;
 import compiler.Components.Blocks.ASTNodeImpl;
@@ -28,18 +29,30 @@ public class Compiler {
             content.append(line).append("\n");
         }
 
-        Lexer lexer = new Lexer(new StringReader(content.toString()));
+        try {
+            Lexer lexer = new Lexer(new StringReader(content.toString()));
 
-        if (Objects.equals(mode, "-lexer")) {
-            while (!lexer.isComplete()) {
-                System.out.println(lexer.getNextSymbol());
+            if (Objects.equals(mode, "-lexer")) {
+                while (!lexer.isComplete()) {
+                    System.out.println(lexer.getNextSymbol());
+                }
             }
-        }
-        else if (Objects.equals(mode, "-parser")) {
-            Parser parser = new Parser(lexer);
+            else if (Objects.equals(mode, "-parser")) {
+                Parser parser = new Parser(lexer);
 
-            ASTNodeImpl ast = parser.getAST();
-            ast.printAST(0);
+                ASTNodeImpl ast = parser.getAST();
+                ast.printAST(0);
+            } else if (Objects.equals(mode, "-analysis")) {
+                Parser parser = new Parser(lexer);
+
+                ASTNodeImpl ast = parser.getAST();
+
+                Analyzer analyzer = Analyzer.getInstance();
+                analyzer.analyze(ast);
+            }
+        } catch (RuntimeException e) {
+            System.err.println(e.getMessage());
+            System.exit(2);
         }
     }
 }

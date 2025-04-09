@@ -1,16 +1,23 @@
 package compiler.Components.Blocks;
 
-public class FreeStatement implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class FreeStatement extends ASTNodeImpl implements Statement {
     private final String variableName;
 
     public FreeStatement(String variableName) {
+        super("FreeStatement", null);
         this.variableName = variableName;
     }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("FreeStatement", null);
-        node.addChild(new ASTNodeImpl("Variable", variableName));
-        return node;
+    public FreeStatement toASTNode() {
+        addChild(new ASTNodeImpl("Variable", variableName));
+        return this;
+    }
+
+    @Override
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

@@ -1,6 +1,8 @@
 package compiler.Components.Blocks;
 
-public class ForLoop implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class ForLoop extends ASTNodeImpl implements Statement {
     private final String variable;
     private final Expression start;
     private final Expression maxValue;
@@ -8,6 +10,7 @@ public class ForLoop implements Statement {
     private final Block body;
 
     public ForLoop(String variable, Expression start, Expression maxValue, Expression step, Block body) {
+        super("ForLoop", null);
         this.variable = variable;
         this.start = start;
         this.maxValue = maxValue;
@@ -16,26 +19,30 @@ public class ForLoop implements Statement {
     }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("ForLoop", null);
-        node.addChild(new ASTNodeImpl("LoopVariable", variable));
+    public ForLoop toASTNode() {
+        addChild(new ASTNodeImpl("LoopVariable", variable));
 
         ASTNodeImpl startNode = new ASTNodeImpl("InitialValue", null);
         startNode.addChild(start.toASTNode());
-        node.addChild(startNode);
+        addChild(startNode);
 
         ASTNodeImpl maxValueNode = new ASTNodeImpl("MaximumValue", null);
         maxValueNode.addChild(maxValue.toASTNode());
-        node.addChild(maxValueNode);
+        addChild(maxValueNode);
 
         ASTNodeImpl stepNode = new ASTNodeImpl("Step", null);
         stepNode.addChild(step.toASTNode());
-        node.addChild(stepNode);
+        addChild(stepNode);
 
         ASTNodeImpl bodyNode = new ASTNodeImpl("Body", null);
         bodyNode.addChild(body.toASTNode());
-        node.addChild(bodyNode);
+        addChild(bodyNode);
 
-        return node;
+        return this;
+    }
+
+    @Override
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

@@ -1,18 +1,29 @@
 package compiler.Components.Blocks;
 
-public class ReturnStatement implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class ReturnStatement extends ASTNodeImpl implements Statement {
     private final Expression returnValue;
 
     public ReturnStatement(Expression returnValue) {
+        super("ReturnStatement", null);
         this.returnValue = returnValue;
     }
 
+    public Expression getReturnValue() {
+        return returnValue;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("ReturnStatement", null);
+    public ReturnStatement toASTNode() {
         if (returnValue != null) {
-            node.addChild(returnValue.toASTNode());
+            addChild(returnValue.toASTNode());
         }
-        return node;
+        return this;
+    }
+
+    @Override
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

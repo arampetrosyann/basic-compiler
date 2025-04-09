@@ -48,14 +48,14 @@ public class  Parser {
             if (typeName.equals("int") || typeName.equals("float") ||
                     typeName.equals("bool") || typeName.equals("string")) {
                 match(Token.KEYWORD);
-                baseType = new Type(typeName);
+                baseType = new Type(typeName, TypeCategory.PRIMITIVE);
             } else {
                 throw new ParserException("Invalid type: " + typeName, lookahead.getLineNumber());
             }
-        } else if (lookahead.getToken() == Token.IDENTIFIER && Character.isUpperCase(lookahead.getValue().charAt(0))) {
+        } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // Handle user-defined types (record)
             Symbol identifier = match(Token.IDENTIFIER);
-            baseType = new Type(identifier.getValue());
+            baseType = new Type(identifier.getValue(), TypeCategory.RECORD);
         } else {
             throw new ParserException("Invalid type: " + lookahead.getValue(), lookahead.getLineNumber());
         }
@@ -64,7 +64,7 @@ public class  Parser {
         if (lookahead.getToken() == Token.OPEN_SQUARE_BRACKET) {
             match(Token.OPEN_SQUARE_BRACKET);
             match(Token.CLOSE_SQUARE_BRACKET);
-            return new Type(baseType.getIdentifier() + "[]");
+            return new Type(baseType.getIdentifier() + "[]", TypeCategory.ARRAY);
         }
 
         return baseType;
@@ -108,10 +108,10 @@ public class  Parser {
         if (lookahead.getToken() == Token.KEYWORD) {
             // Primitive type
             type = parseType();
-        } else if (lookahead.getToken() == Token.IDENTIFIER && Character.isUpperCase(lookahead.getValue().charAt(0))) {
+        } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // User-defined record type
             Symbol recordName = match(Token.IDENTIFIER);
-            type = new Type(recordName.getValue());
+            type = new Type(recordName.getValue(), TypeCategory.RECORD);
         } else {
             throw new ParserException("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken(), lookahead.getLineNumber());
         }
