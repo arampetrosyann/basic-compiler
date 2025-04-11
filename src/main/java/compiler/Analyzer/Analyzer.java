@@ -288,7 +288,6 @@ public class Analyzer {
                 throw new TypeError("Type Error: Trying to index a non-array value.");
             }
 
-            // Check index is integer
             VarType indexType = getType(access.getIndex());
             if (indexType == null || !indexType.equals(PrimitiveType.INT)) {
                 throw new TypeError("Type Error: Array index must be of type int.");

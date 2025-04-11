@@ -26,7 +26,7 @@ public class TestAnalyzer {
 
     @Before
     public void resetAnalyzer() {
-        Analyzer.getInstance().reset(); // or Analyzer.resetInstance();
+        Analyzer.getInstance().reset();
     }
 
     // Assignment
