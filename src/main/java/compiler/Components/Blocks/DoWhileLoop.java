@@ -12,6 +12,14 @@ public class DoWhileLoop extends ASTNodeImpl implements Statement {
         this.body = body;
     }
 
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public Block getBody() {
+        return body;
+    }
+
     @Override
     public DoWhileLoop toASTNode() {
         addChild(body.toASTNode());

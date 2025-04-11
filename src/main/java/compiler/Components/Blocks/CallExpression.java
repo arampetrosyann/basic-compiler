@@ -14,6 +14,14 @@ public class CallExpression extends ASTNodeImpl implements Expression {
         this.arguments = arguments;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public List<Expression> getArguments() {
+        return arguments;
+    }
+
     @Override
     public CallExpression toASTNode() {
         for (Expression arg : arguments) {

@@ -12,6 +12,14 @@ public class WhileLoop extends ASTNodeImpl implements Statement {
         this.body = body;
     }
 
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public Block getBody() {
+        return body;
+    }
+
     @Override
     public WhileLoop toASTNode() {
         ASTNodeImpl conditionNode = new ASTNodeImpl("Condition", null);

@@ -18,6 +18,17 @@ public class Type extends ASTNodeImpl {
         return category;
     }
 
+    public Type getArrayElementType() {
+        if (category == TypeCategory.ARRAY) {
+            String elementIdentifier = identifier.substring(0, identifier.length() - 2);
+            TypeCategory elementCategory = Character.isUpperCase(elementIdentifier.charAt(0))
+                    ? TypeCategory.RECORD
+                    : TypeCategory.PRIMITIVE;
+            return new Type(elementIdentifier, elementCategory);
+        }
+        throw new IllegalStateException("Not an array type: " + identifier);
+    }
+
     @Override
     public Type toASTNode() {
         return this;

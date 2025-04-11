@@ -12,6 +12,14 @@ public class RecordFieldAccess extends ASTNodeImpl implements Expression {
         this.fieldName = fieldName;
     }
 
+    public Expression getRecord() {
+        return record;
+    }
+
+    public String getFieldName() {
+        return fieldName;
+    }
+
     @Override
     public RecordFieldAccess toASTNode() {
         addChild(record.toASTNode());

@@ -18,6 +18,26 @@ public class ForLoop extends ASTNodeImpl implements Statement {
         this.body = body;
     }
 
+    public String getVariable() {
+        return variable;
+    }
+
+    public Expression getStart() {
+        return start;
+    }
+
+    public Expression getMaxValue() {
+        return maxValue;
+    }
+
+    public Expression getStep() {
+        return step;
+    }
+
+    public Block getBody() {
+        return body;
+    }
+
     @Override
     public ForLoop toASTNode() {
         addChild(new ASTNodeImpl("LoopVariable", variable));

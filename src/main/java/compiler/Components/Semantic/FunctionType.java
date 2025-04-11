@@ -25,4 +25,21 @@ public class FunctionType extends VarType {
     public int getParametersCount() {
         return parameters.size();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FunctionType that = (FunctionType) o;
+        return this.returnType.equals(that.returnType) &&
+                this.parameters.equals(that.parameters); // order matters
+    }
+
+    @Override
+    public int hashCode() {
+        int result = returnType.hashCode();
+        result = 31 * result + parameters.hashCode();
+        return result;
+    }
+
 }

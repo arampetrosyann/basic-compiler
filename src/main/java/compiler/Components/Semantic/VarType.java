@@ -10,5 +10,11 @@ public abstract class VarType {
     public TypeName getName() {
         return name;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o); // or leave abstract if needed
+    }
+
 }
 
