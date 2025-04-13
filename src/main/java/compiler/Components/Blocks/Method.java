@@ -35,31 +35,6 @@ public class Method extends ASTNodeImpl implements Statement, Expression {
     }
 
     @Override
-    public Method toASTNode() {
-        if(returnType != null) {
-            addChild(returnType.toASTNode());
-        } else {
-            addChild(new ASTNodeImpl("ReturnType", "void"));
-        }
-
-        if(!parameters.isEmpty()) {
-            ASTNodeImpl paramsNode = new ASTNodeImpl("Parameters", null);
-            for (Param param : parameters) {
-                paramsNode.addChild(param.toASTNode());
-            }
-            addChild(paramsNode);
-        }
-
-        if(!body.getStatements().isEmpty()) {
-            ASTNodeImpl bodyNode = new ASTNodeImpl("Body", null);
-            bodyNode.addChild(body.toASTNode());
-            addChild(bodyNode);
-        }
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

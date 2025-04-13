@@ -17,12 +17,4 @@ public class Param extends ASTNodeImpl {
     public Type getType() {
         return type;
     }
-
-    @Override
-    public Param toASTNode() {
-        addChild(type.toASTNode());
-        addChild(new ASTNodeImpl("Identifier", name));
-
-        return this;
-    }
 }

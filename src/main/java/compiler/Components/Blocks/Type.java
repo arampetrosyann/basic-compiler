@@ -28,9 +28,4 @@ public class Type extends ASTNodeImpl {
         }
         throw new IllegalStateException("Not an array type: " + identifier);
     }
-
-    @Override
-    public Type toASTNode() {
-        return this;
-    }
 }

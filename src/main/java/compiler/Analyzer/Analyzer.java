@@ -49,12 +49,7 @@ public class Analyzer {
         node.accept(this);
     }
 
-    // root
-    public void check(ASTNodeImpl node) {
-        for (ASTNodeImpl child : node.getChildren()) {
-            child.accept(this);
-        }
-    }
+    public void check(ASTNodeImpl node) {}
 
     private VarType mapToVarType(Type type) {
         String id = type.getIdentifier();
@@ -191,9 +186,7 @@ public class Analyzer {
 
         if (lookedUp instanceof FunctionType functionType) {
             List<VarType> expectedArgs = functionType.getParameters();
-            List<Expression> actualArgs = callExpr.getChildren().stream()
-                    .map(child -> (Expression) child)
-                    .toList();
+            List<Expression> actualArgs = callExpr.getArguments();
 
             if (expectedArgs.size() != actualArgs.size()) {
                 throw new ArgumentError("ArgumentError: Incorrect number of arguments for function " + name);
@@ -210,9 +203,7 @@ public class Analyzer {
             return functionType.getReturnType();
         } else if (lookedUp instanceof RecordType recordType) {
             Map<String, VarType> fields = recordType.getFields();
-            List<Expression> args = callExpr.getChildren().stream()
-                    .map(child -> (Expression) child)
-                    .toList();
+            List<Expression> args = callExpr.getArguments();
 
             if (fields.size() != args.size()) {
                 throw new ArgumentError("ArgumentError: Wrong number of arguments for record constructor " + name);

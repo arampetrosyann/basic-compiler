@@ -21,14 +21,6 @@ public class RecordFieldAccess extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public RecordFieldAccess toASTNode() {
-        addChild(record.toASTNode());
-        addChild(new ASTNodeImpl("FieldName", fieldName));
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

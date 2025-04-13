@@ -15,12 +15,6 @@ public class FreeStatement extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public FreeStatement toASTNode() {
-        addChild(new ASTNodeImpl("Variable", variableName));
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

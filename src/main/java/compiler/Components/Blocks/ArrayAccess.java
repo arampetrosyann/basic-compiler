@@ -21,15 +21,6 @@ public class ArrayAccess extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public ArrayAccess toASTNode() {
-        addChild(new ASTNodeImpl("Identifier", arrayName));
-        ASTNodeImpl indexNode = new ASTNodeImpl("Index", null);
-        indexNode.addChild(index.toASTNode());
-        addChild(indexNode);
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

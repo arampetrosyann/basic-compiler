@@ -21,13 +21,6 @@ public class Assignment extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public Assignment toASTNode() {
-        addChild(target.toASTNode());
-        addChild(value.toASTNode());
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

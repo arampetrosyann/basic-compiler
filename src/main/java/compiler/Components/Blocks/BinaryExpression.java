@@ -28,14 +28,6 @@ public class BinaryExpression extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public BinaryExpression toASTNode() {
-        addChild(left.toASTNode());
-        addChild(new ASTNodeImpl("ArithmeticOperator", operator.toString()));
-        addChild(right.toASTNode());
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

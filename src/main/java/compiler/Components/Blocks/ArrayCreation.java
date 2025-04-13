@@ -21,18 +21,6 @@ public class ArrayCreation extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public ArrayCreation toASTNode() {
-        ASTNodeImpl sizeNode = new ASTNodeImpl("Size", null);
-        sizeNode.addChild(size.toASTNode());
-        addChild(sizeNode);
-
-        ASTNodeImpl typeNode = new ASTNodeImpl("ElementType", elementType.getIdentifier());
-        addChild(typeNode);
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

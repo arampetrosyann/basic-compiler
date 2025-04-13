@@ -17,11 +17,5 @@ public class RecordField extends ASTNodeImpl {
     public Type getType() {
         return type;
     }
-
-    @Override
-    public RecordField toASTNode() {
-        addChild(type.toASTNode());
-        return this;
-    }
 }
 

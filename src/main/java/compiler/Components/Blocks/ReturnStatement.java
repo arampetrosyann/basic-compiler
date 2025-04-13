@@ -15,14 +15,6 @@ public class ReturnStatement extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public ReturnStatement toASTNode() {
-        if (returnValue != null) {
-            addChild(returnValue.toASTNode());
-        }
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

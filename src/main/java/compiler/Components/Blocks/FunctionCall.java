@@ -23,15 +23,6 @@ public class FunctionCall extends ASTNodeImpl implements Expression, Statement {
     }
 
     @Override
-    public FunctionCall toASTNode() {
-        for (Expression arg : arguments) {
-            addChild(arg.toASTNode());
-        }
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }
