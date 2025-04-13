@@ -46,30 +46,6 @@ public class Analyzer {
 
     public void check(ASTNodeImpl node) {
         for (ASTNodeImpl child : node.getChildren()) {
-            if (child instanceof RecordDefinition record) {
-                Map<String, VarType> fields = new HashMap<>();
-                for (RecordField field : record.getFields()) {
-                    fields.put(field.getName(), mapToVarType(field.getType()));
-                }
-                globalTable.insert(record.getName(), new RecordType(fields));
-            }
-        }
-
-        for (ASTNodeImpl child : node.getChildren()) {
-            if (child instanceof Method method) {
-                List<VarType> paramTypes = new ArrayList<>();
-                for (Param param : method.getParameters()) {
-                    paramTypes.add(mapToVarType(param.getType()));
-                }
-                VarType returnType = new ReturnType(TypeName.VOID);
-                if (method.getReturnType() != null) {
-                    returnType = mapToVarType(method.getReturnType());
-                }
-                globalTable.insert(method.getName(), new FunctionType(returnType, paramTypes));
-            }
-        }
-
-        for (ASTNodeImpl child : node.getChildren()) {
             child.accept(this);
         }
     }
