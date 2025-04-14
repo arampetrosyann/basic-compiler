@@ -11,13 +11,8 @@ import java.util.Objects;
 
 public class Compiler {
     public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            System.out.println("Usage: java Compiler -lexer filepath OR java Compiler -parser filepath");
-            return;
-        }
-
-        String mode = args[0];
-        String filepath = args[1];
+        String mode = args.length > 1 ? args[0] : "-analysis";
+        String filepath = args.length > 1 ? args[1] : args[0];
 
         // read the file
         FileInputStream inputStream = new FileInputStream(filepath);
@@ -55,7 +50,7 @@ public class Compiler {
             }
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
-//            System.exit(2);
+            System.exit(2);
         }
     }
 }

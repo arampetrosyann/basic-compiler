@@ -51,7 +51,6 @@ public class Analyzer {
         node.accept(this);
     }
 
-    // root
     public void check(ASTNodeImpl node) {}
 
     private VarType mapToVarType(Type type) {
