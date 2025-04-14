@@ -1,20 +1,27 @@
 package compiler.Components.Blocks;
 
-public class Assignment implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class Assignment extends ASTNodeImpl implements Statement {
     private final Expression target;
     private final Expression value;
 
     public Assignment(Expression target, Expression value) {
+        super("Assignment", null);
         this.target = target;
         this.value = value;
     }
 
+    public Expression getTarget() {
+        return target;
+    }
+
+    public Expression getValue() {
+        return value;
+    }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("Assignment", null);
-        node.addChild(target.toASTNode()); // Left-hand side: could be a variable, an array access, or a record field access
-        node.addChild(value.toASTNode()); // Right-hand side expression
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

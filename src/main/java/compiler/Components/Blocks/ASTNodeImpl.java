@@ -1,43 +1,14 @@
 package compiler.Components.Blocks;
 
-import java.util.ArrayList;
-import java.util.List;
+import compiler.Analyzer.Analyzer;
 
 public class ASTNodeImpl implements ASTNode {
     private final String type;
     private final String value;
-    private final List<ASTNode> children;
 
     public ASTNodeImpl(String type, String value) {
         this.type = type;
         this.value = value;
-        this.children = new ArrayList<>();
-    }
-
-    public void addChild(ASTNode child) {
-        children.add(child);
-    }
-
-    public void printAST(int depth) {
-        String indent = " ".repeat(depth * 2);
-
-        // Print current node
-        if (!type.equals("Program")) {
-            System.out.println(indent + this);
-        }
-
-        // Recursively print child nodes
-        for (ASTNodeImpl child : getChildren()) {
-            child.printAST(depth + 1);
-        }
-    }
-
-    public List<ASTNodeImpl> getChildren() {
-        List<ASTNodeImpl> children = new ArrayList<>();
-        for (ASTNode child : this.children) {
-            children.add((ASTNodeImpl) child);
-        }
-        return children;
     }
 
     @Override
@@ -46,7 +17,7 @@ public class ASTNodeImpl implements ASTNode {
     }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        return this;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

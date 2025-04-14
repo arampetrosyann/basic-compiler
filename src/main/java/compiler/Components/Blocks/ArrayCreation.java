@@ -1,25 +1,27 @@
 package compiler.Components.Blocks;
 
-public class ArrayCreation implements Expression {
+import compiler.Analyzer.Analyzer;
+
+public class ArrayCreation extends ASTNodeImpl implements Expression {
     private final Expression size;
     private final Type elementType;
 
     public ArrayCreation(Expression size, Type elementType) {
+        super("ArrayCreation", null);
         this.size = size;
         this.elementType = elementType;
     }
 
+    public Expression getSize() {
+        return size;
+    }
+
+    public Type getElementType() {
+        return elementType;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("ArrayCreation", null);
-
-        ASTNodeImpl sizeNode = new ASTNodeImpl("Size", null);
-        sizeNode.addChild(size.toASTNode());
-        node.addChild(sizeNode);
-
-        ASTNodeImpl typeNode = new ASTNodeImpl("ElementType", elementType.getIdentifier());
-        node.addChild(typeNode);
-
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

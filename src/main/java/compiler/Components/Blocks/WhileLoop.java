@@ -1,26 +1,27 @@
 package compiler.Components.Blocks;
 
-public class WhileLoop implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class WhileLoop extends ASTNodeImpl implements Statement {
     private final Expression condition;
     private final Block body;
 
     public WhileLoop(Expression condition, Block body) {
+        super("WhileLoop", null);
         this.condition = condition;
         this.body = body;
     }
 
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public Block getBody() {
+        return body;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("WhileLoop", null);
-
-        ASTNodeImpl conditionNode = new ASTNodeImpl("Condition", null);
-        conditionNode.addChild(condition.toASTNode());
-        node.addChild(conditionNode);
-
-        ASTNodeImpl bodyNode = new ASTNodeImpl("Body", null);
-        bodyNode.addChild(body.toASTNode());
-        node.addChild(bodyNode);
-
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

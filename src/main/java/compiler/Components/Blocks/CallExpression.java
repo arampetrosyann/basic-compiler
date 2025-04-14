@@ -1,22 +1,29 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
+
 import java.util.List;
 
-public class CallExpression implements Expression {
+public class CallExpression extends ASTNodeImpl implements Expression {
     private final String type;
     private final List<Expression> arguments;
 
     public CallExpression(String type, List<Expression> arguments) {
+        super("CallExpression", type);
         this.type = type;
         this.arguments = arguments;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public List<Expression> getArguments() {
+        return arguments;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("CallExpression", type);
-        for (Expression arg : arguments) {
-            node.addChild(arg.toASTNode());
-        }
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

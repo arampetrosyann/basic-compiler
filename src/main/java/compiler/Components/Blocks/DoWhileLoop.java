@@ -1,19 +1,27 @@
 package compiler.Components.Blocks;
 
-public class DoWhileLoop implements Statement {
+import compiler.Analyzer.Analyzer;
+
+public class DoWhileLoop extends ASTNodeImpl implements Statement {
     private final Expression condition;
     private final Block body;
 
     public DoWhileLoop(Expression condition, Block body) {
+        super("DoWhileLoop", null);
         this.condition = condition;
         this.body = body;
     }
 
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public Block getBody() {
+        return body;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("DoWhileLoop", null);
-        node.addChild(body.toASTNode());
-        node.addChild(condition.toASTNode());
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

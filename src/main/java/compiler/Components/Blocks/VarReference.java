@@ -1,16 +1,21 @@
 package compiler.Components.Blocks;
 
-public class VarReference implements Expression {
+import compiler.Analyzer.Analyzer;
+
+public class VarReference extends ASTNodeImpl implements Expression {
     private final String name;
 
     public VarReference(String name) {
-
+        super("Identifier", name);
         this.name = name;
     }
 
-    @Override
-    public ASTNodeImpl toASTNode() {
+    public String getName() {
+        return name;
+    }
 
-        return new ASTNodeImpl("Identifier", name);
+    @Override
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

@@ -1,25 +1,29 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
+
 import java.util.List;
 
-public class FunctionCall implements Expression, Statement {
+public class FunctionCall extends ASTNodeImpl implements Expression, Statement {
     private final String functionName;
     private final List<Expression> arguments;
 
     public FunctionCall(String functionName, List<Expression> arguments) {
+        super("FunctionCall", functionName);
         this.functionName = functionName;
         this.arguments = arguments;
     }
 
+    public String getFunctionName() {
+        return functionName;
+    }
+
+    public List<Expression> getArguments() {
+        return arguments;
+    }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("FunctionCall", functionName);
-
-        for (Expression arg : arguments) {
-            node.addChild(arg.toASTNode());
-        }
-
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

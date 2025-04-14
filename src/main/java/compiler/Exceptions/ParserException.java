@@ -10,7 +10,7 @@ public class ParserException extends RuntimeException {
   }
 
   private static String formatMessage(String message, Integer lineNumber) {
-    String processedMessage = message.contains("Parser Error: ") ? message : "Parser Error: " + message;
+    String processedMessage = message.contains("ParserError: ") ? message : "Parser Error: " + message;
 
     return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;
   }

@@ -1,11 +1,14 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
+
 import java.util.List;
 
-public class Block implements Statement {
+public class Block extends ASTNodeImpl implements Statement {
     private final List<Statement> statements;
 
     public Block(List<Statement> statements) {
+        super("Block", null);
         this.statements = statements;
     }
 
@@ -14,11 +17,7 @@ public class Block implements Statement {
     }
 
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("Block", null);
-        for (Statement statement : statements) {
-            node.addChild(statement.toASTNode());
-        }
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

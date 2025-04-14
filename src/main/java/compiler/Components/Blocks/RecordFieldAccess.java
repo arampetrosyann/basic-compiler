@@ -1,21 +1,27 @@
 package compiler.Components.Blocks;
 
-public class RecordFieldAccess implements Expression {
+import compiler.Analyzer.Analyzer;
+
+public class RecordFieldAccess extends ASTNodeImpl implements Expression {
     private final Expression record;
     private final String fieldName;
 
     public RecordFieldAccess(Expression record, String fieldName) {
+        super("RecordFieldAccess", null);
         this.record = record;
         this.fieldName = fieldName;
     }
 
+    public Expression getRecord() {
+        return record;
+    }
+
+    public String getFieldName() {
+        return fieldName;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("RecordFieldAccess", null);
-
-        node.addChild(record.toASTNode());
-        node.addChild(new ASTNodeImpl("FieldName", fieldName));
-
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

@@ -1,13 +1,15 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
 import compiler.Components.Symbol;
 import compiler.Components.Token;
 
-public class Literal implements Expression {
+public class Literal extends ASTNodeImpl implements Expression {
     private final String value; // should be of type int, float, bool or string
     private final String type;
 
     public Literal(Symbol symbol) {
+        super(symbol.getToken().toString(), symbol.getValue());
         String value = symbol.getValue();
         Token token = symbol.getToken();
         String type = (token == Token.STRING) ? "String" :
@@ -22,8 +24,16 @@ public class Literal implements Expression {
         this.type = type;
     }
 
+    public String getValue() {
+        return value;
+    }
+
+    public String getType() {
+        return type;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        return new ASTNodeImpl(type, value);
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }

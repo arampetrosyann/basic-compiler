@@ -1,22 +1,29 @@
 package compiler.Components.Blocks;
 
+import compiler.Analyzer.Analyzer;
+
 import java.util.List;
 
-public class RecordDefinition implements Statement {
+public class RecordDefinition extends ASTNodeImpl implements Statement {
     private final String name;
     private final List<RecordField> fields;
 
     public RecordDefinition(String name, List<RecordField> fields) {
+        super("Record", name);
         this.name = name;
         this.fields = fields;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public List<RecordField> getFields() {
+        return fields;
+    }
+
     @Override
-    public ASTNodeImpl toASTNode() {
-        ASTNodeImpl node = new ASTNodeImpl("Record", name);
-        for (RecordField field : fields) {
-            node.addChild(field.toASTNode());
-        }
-        return node;
+    public void accept(Analyzer analyzer) {
+        analyzer.check(this);
     }
 }
