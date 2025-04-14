@@ -10,7 +10,7 @@ public class RecordError extends RuntimeException {
     }
 
     private static String formatMessage(String message, Integer lineNumber) {
-        String errorName = "Record Error: ";
+        String errorName = "RecordError: ";
         String processedMessage = message.contains(errorName) ? message : errorName + message;
 
         return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;

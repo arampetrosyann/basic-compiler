@@ -10,7 +10,7 @@ public class ScopeError extends RuntimeException {
     }
 
     private static String formatMessage(String message, Integer lineNumber) {
-        String errorName = "Scope Error: ";
+        String errorName = "ScopeError: ";
         String processedMessage = message.contains(errorName) ? message : errorName + message;
 
         return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;

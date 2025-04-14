@@ -10,7 +10,7 @@ public class ReturnError extends RuntimeException {
     }
 
     private static String formatMessage(String message, Integer lineNumber) {
-        String errorName = "Return Error: ";
+        String errorName = "ReturnError: ";
         String processedMessage = message.contains(errorName) ? message : errorName + message;
 
         return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;

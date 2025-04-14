@@ -10,7 +10,7 @@ public class MissingConditionError extends RuntimeException {
     }
 
     private static String formatMessage(String message, Integer lineNumber) {
-        String errorName = "Missing Condition Error: ";
+        String errorName = "MissingConditionError: ";
         String processedMessage = message.contains(errorName) ? message : errorName + message;
 
         return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;
