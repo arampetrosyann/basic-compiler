@@ -15,11 +15,6 @@ public class VarReference extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public VarReference toASTNode() {
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

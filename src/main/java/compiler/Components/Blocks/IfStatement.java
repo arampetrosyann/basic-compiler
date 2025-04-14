@@ -27,29 +27,6 @@ public class IfStatement extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public IfStatement toASTNode() {
-        ASTNodeImpl conditionNode = new ASTNodeImpl("Condition", null);
-        conditionNode.addChild(condition.toASTNode());
-        addChild(conditionNode);
-
-        ASTNodeImpl thenNode = new ASTNodeImpl("ThenBlock", null);
-        if(!thenBlock.getStatements().isEmpty()) {
-            thenNode.addChild(thenBlock.toASTNode());
-        }
-        addChild(thenNode);
-
-        if (elseBlock != null) {
-            ASTNodeImpl elseNode = new ASTNodeImpl("ElseBlock", null);
-            if(!elseBlock.getStatements().isEmpty()) {
-                elseNode.addChild(elseBlock.toASTNode());
-            }
-            addChild(elseNode);
-        }
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

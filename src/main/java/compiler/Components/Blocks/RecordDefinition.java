@@ -23,14 +23,6 @@ public class RecordDefinition extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public RecordDefinition toASTNode() {
-        for (RecordField field : fields) {
-            addChild(field.toASTNode());
-        }
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

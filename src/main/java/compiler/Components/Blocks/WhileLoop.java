@@ -21,19 +21,6 @@ public class WhileLoop extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public WhileLoop toASTNode() {
-        ASTNodeImpl conditionNode = new ASTNodeImpl("Condition", null);
-        conditionNode.addChild(condition.toASTNode());
-        addChild(conditionNode);
-
-        ASTNodeImpl bodyNode = new ASTNodeImpl("Body", null);
-        bodyNode.addChild(body.toASTNode());
-        addChild(bodyNode);
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

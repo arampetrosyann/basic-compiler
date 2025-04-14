@@ -17,14 +17,6 @@ public class Block extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public Block toASTNode() {
-        for (Statement statement : statements) {
-            addChild(statement.toASTNode());
-        }
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

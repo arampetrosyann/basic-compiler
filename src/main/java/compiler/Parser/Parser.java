@@ -546,17 +546,17 @@ public class  Parser {
         return new Method(functionName.getValue(), returnType, params, body);
     }
 
-    public ASTNodeImpl getAST() throws ParserException {
-        ASTNodeImpl root = new ASTNodeImpl("Program", null);
+    public Block getAST() throws ParserException {
+        List<Statement> statements = new ArrayList<>();
 
         while (lookahead.getToken() != Token.EOF) {
             if (lookahead.getToken() == Token.KEYWORD && lookahead.getValue().equals("fun")) {
-                root.addChild(parseMethod().toASTNode());
+                statements.add(parseMethod());
             } else {
-                root.addChild(parseStatement().toASTNode());
+                statements.add(parseStatement());
             }
         }
 
-        return root;
+        return new Block(statements);
     }
 }

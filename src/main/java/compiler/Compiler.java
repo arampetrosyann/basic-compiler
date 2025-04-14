@@ -1,6 +1,7 @@
 package compiler;
 
 import compiler.Analyzer.Analyzer;
+import compiler.Components.Blocks.ASTPrinter;
 import compiler.Lexer.Lexer;
 import compiler.Parser.Parser;
 import compiler.Components.Blocks.ASTNodeImpl;
@@ -41,7 +42,9 @@ public class Compiler {
                 Parser parser = new Parser(lexer);
 
                 ASTNodeImpl ast = parser.getAST();
-                ast.printAST(0);
+                ASTPrinter printer = new ASTPrinter();
+                printer.printAST(ast);
+
             } else if (Objects.equals(mode, "-analysis")) {
                 Parser parser = new Parser(lexer);
 
@@ -52,7 +55,7 @@ public class Compiler {
             }
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
-            System.exit(2);
+//            System.exit(2);
         }
     }
 }

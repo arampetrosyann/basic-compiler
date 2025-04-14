@@ -23,14 +23,6 @@ public class CallExpression extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public CallExpression toASTNode() {
-        for (Expression arg : arguments) {
-            addChild(arg.toASTNode());
-        }
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

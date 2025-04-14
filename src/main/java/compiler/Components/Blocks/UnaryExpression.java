@@ -22,14 +22,6 @@ public class UnaryExpression extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public UnaryExpression toASTNode() {
-        addChild(new ASTNodeImpl("UnaryOperator", operator.toString()));
-        addChild(operand.toASTNode());
-
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

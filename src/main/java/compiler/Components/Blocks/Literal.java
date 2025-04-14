@@ -33,11 +33,6 @@ public class Literal extends ASTNodeImpl implements Expression {
     }
 
     @Override
-    public Literal toASTNode() {
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }

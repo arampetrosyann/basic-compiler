@@ -52,11 +52,7 @@ public class Analyzer {
     }
 
     // root
-    public void check(ASTNodeImpl node) {
-        for (ASTNodeImpl child : node.getChildren()) {
-            child.accept(this);
-        }
-    }
+    public void check(ASTNodeImpl node) {}
 
     private VarType mapToVarType(Type type) {
         String id = type.getIdentifier();
@@ -270,9 +266,7 @@ public class Analyzer {
 
         if (lookedUp instanceof FunctionType functionType) {
             List<VarType> expectedArgs = functionType.getParameters();
-            List<Expression> actualArgs = elem.getChildren().stream()
-                    .map(child -> (Expression) child)
-                    .toList();
+            List<Expression> actualArgs = elem.getArguments();
 
             if (expectedArgs.size() != actualArgs.size()) {
                 throw new ArgumentError("Incorrect number of arguments for function " + name);
@@ -289,9 +283,7 @@ public class Analyzer {
             return functionType.getReturnType();
         } else if (lookedUp instanceof RecordType recordType) {
             Map<String, VarType> fields = recordType.getFields();
-            List<Expression> args = elem.getChildren().stream()
-                    .map(child -> (Expression) child)
-                    .toList();
+            List<Expression> args = elem.getArguments();
 
             if (fields.size() != args.size()) {
                 throw new ArgumentError("Wrong number of arguments for record constructor " + name);
@@ -409,7 +401,7 @@ public class Analyzer {
     public void check(Type elem) {}
 
     public void check(RecordDefinition elem) {
-        if (currentScope.contains(elem.getName())) {
+        if (globalTable.contains(elem.getName())) {
             throw new RecordError("Record '" + elem.getName() + "' is already defined");
         }
 

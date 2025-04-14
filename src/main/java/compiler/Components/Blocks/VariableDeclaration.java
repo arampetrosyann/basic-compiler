@@ -33,15 +33,6 @@ public class VariableDeclaration extends ASTNodeImpl implements Statement {
     }
 
     @Override
-    public VariableDeclaration toASTNode() {
-        addChild(type.toASTNode());
-        addChild(new ASTNodeImpl("Identifier", identifier));
-        addChild(value != null ? value.toASTNode() : new ASTNodeImpl("Value", null));
-        addChild(new ASTNodeImpl("Final", isFinal ? "true" : "false"));
-        return this;
-    }
-
-    @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
     }
