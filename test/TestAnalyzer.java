@@ -197,6 +197,14 @@ public class TestAnalyzer {
     // Records
 
     @Test
+    public void testRedefineRecord() {
+        analyzeExpecting(RecordError.class, """
+            Person rec { name string; age int; }
+            Person rec { name string; age int; }
+        """);
+    }
+
+    @Test
     public void testValidRecordDefinition() {
         analyze("Person rec { name string; age int; }");
     }
@@ -257,6 +265,20 @@ public class TestAnalyzer {
     }
 
     @Test
+    public void testValidFunctionReturnType() {
+        analyze("""
+            fun get() int {
+                a int = 20;
+                b int = 30;
+                
+                return a + b;
+            }
+            
+            get();
+        """);
+    }
+
+    @Test
     public void testFunctionArgumentCountMismatch() {
         analyzeExpecting(ArgumentError.class, """
             fun printOne(x int) {
@@ -273,6 +295,17 @@ public class TestAnalyzer {
                 return x * x;
             }
             result int = square("hello");
+        """);
+    }
+
+    @Test
+    public void testFunctionReturnTypeMismatch() {
+        analyzeExpecting(ReturnError.class, """
+            fun func() int {
+                return "srt";
+            }
+            
+            func();
         """);
     }
 
@@ -301,8 +334,6 @@ public class TestAnalyzer {
             nums[0] = "hi";
         """);
     }
-
-    // Usage of built-in functions
 
     @Test
     public void testReadInt() {
