@@ -13,6 +13,14 @@ public class UnaryExpression extends ASTNodeImpl implements Expression {
         this.operand = operand;
     }
 
+    public Token getOperator() {
+        return operator;
+    }
+
+    public Expression getOperand() {
+        return operand;
+    }
+
     @Override
     public UnaryExpression toASTNode() {
         addChild(new ASTNodeImpl("UnaryOperator", operator.toString()));

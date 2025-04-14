@@ -19,6 +19,10 @@ public class SymbolTable {
         identifiers.put(identifier, type);
     }
 
+    public boolean contains(String identifier) {
+        return identifiers.containsKey(identifier);
+    }
+
     public VarType lookup(String identifier) {
         VarType varType = identifiers.get(identifier);
 

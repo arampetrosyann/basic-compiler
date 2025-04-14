@@ -421,7 +421,7 @@ public class  Parser {
     }
 
     private Expression parseUnary() throws ParserException {
-        if (lookahead.getToken() == Token.SUBTRACT || Objects.equals(lookahead.getValue(), "!")) {
+        if (lookahead.getToken() == Token.SUBTRACT) {
             Token operator = lookahead.getToken();
             match(operator);
             Expression operand = parseUnary();

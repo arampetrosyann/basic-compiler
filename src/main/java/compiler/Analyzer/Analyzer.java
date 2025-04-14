@@ -1,5 +1,6 @@
 package compiler.Analyzer;
 
+import compiler.Components.Token;
 import compiler.Components.Blocks.*;
 import compiler.Components.Semantic.*;
 import compiler.Exceptions.Semantic.*;
@@ -31,6 +32,10 @@ public class Analyzer {
     }
 
     private void setupBuiltins() {
+        globalTable.insert("!", new FunctionType(PrimitiveType.BOOL, List.of(PrimitiveType.BOOL)));
+        globalTable.insert("chr", new FunctionType(PrimitiveType.STRING, List.of(PrimitiveType.INT)));
+        globalTable.insert("floor", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.FLOAT)));
+        globalTable.insert("len", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.STRING)));
         globalTable.insert("readInt", new FunctionType(PrimitiveType.INT, List.of()));
         globalTable.insert("readFloat", new FunctionType(PrimitiveType.FLOAT, List.of()));
         globalTable.insert("readString", new FunctionType(PrimitiveType.STRING, List.of()));
@@ -44,31 +49,8 @@ public class Analyzer {
         node.accept(this);
     }
 
+    // root
     public void check(ASTNodeImpl node) {
-        for (ASTNodeImpl child : node.getChildren()) {
-            if (child instanceof RecordDefinition record) {
-                Map<String, VarType> fields = new HashMap<>();
-                for (RecordField field : record.getFields()) {
-                    fields.put(field.getName(), mapToVarType(field.getType()));
-                }
-                globalTable.insert(record.getName(), new RecordType(fields));
-            }
-        }
-
-        for (ASTNodeImpl child : node.getChildren()) {
-            if (child instanceof Method method) {
-                List<VarType> paramTypes = new ArrayList<>();
-                for (Param param : method.getParameters()) {
-                    paramTypes.add(mapToVarType(param.getType()));
-                }
-                VarType returnType = new ReturnType(TypeName.VOID);
-                if (method.getReturnType() != null) {
-                    returnType = mapToVarType(method.getReturnType());
-                }
-                globalTable.insert(method.getName(), new FunctionType(returnType, paramTypes));
-            }
-        }
-
         for (ASTNodeImpl child : node.getChildren()) {
             child.accept(this);
         }
@@ -113,6 +95,7 @@ public class Analyzer {
         if (expr instanceof FunctionCall call) return typeFromFunctionCall(call);
         if (expr instanceof CallExpression callExpr) return typeFromCallExpression(callExpr);
         if (expr instanceof RecordFieldAccess fieldAccess) return typeFromRecordFieldAccess(fieldAccess);
+        if (expr instanceof UnaryExpression unary) return typeFromUnaryExpression(unary);
 
         throw new TypeError("Type Error: Unknown expression type " + expr.getClass().getSimpleName());
     }
@@ -266,6 +249,16 @@ public class Analyzer {
         return rec.getFieldValue(fieldName);
     }
 
+    private VarType typeFromUnaryExpression(UnaryExpression unary) {
+        VarType operandType = getType(unary.getOperand());
+
+        if (unary.getOperator() == Token.SUBTRACT) {
+            return operandType;
+        } else {
+            throw new OperatorError("Unknown unary operator " + unary.getOperator());
+        }
+    }
+
     private VarType lookup(String identifier) {
         SymbolTable scope = currentScope;
         while (scope != null) {
@@ -312,6 +305,17 @@ public class Analyzer {
         if (!leftType.equals(rightType)) {
             throw new OperatorError("Operator Error: Mismatched operand types for operator " + elem.getOperator());
         }
+    }
+    
+    public void check(Literal elem) {
+//        getType(elem);
+    }
+    public void check(ArrayCreation elem) {
+        //
+    }
+
+    public void check(ArrayAccess elem) {
+        //
     }
 
     public void check(FunctionCall elem) {
@@ -367,13 +371,23 @@ public class Analyzer {
         }
     }
 
+    public void check(ReturnStatement elem) {}
+
+    public void check(CallExpression elem) {}
+
+    public void check(RecordFieldAccess elem) {
+        getType(elem);
+    }
+
     public void check(VarReference elem) {
-        if (lookup(elem.getName()) == null) {
-            throw new ScopeError("Scope Error: Variable " + elem.getName() + " is not defined in the current scope.");
-        }
+        lookup(elem.getName());
     }
 
     public void check(VariableDeclaration elem) {
+        if (currentScope.contains(elem.getIdentifier())) {
+            throw new ScopeError("Scope Error: Variable '" + elem.getIdentifier() + "' is already defined in the current scope.");
+        }
+
         VarType declaredType;
 
         switch (elem.getType().getCategory()) {
@@ -422,7 +436,29 @@ public class Analyzer {
         currentScope = currentScope.getParent();
     }
 
+    public void check(FreeStatement elem) {
+        lookup(elem.getVariableName());
+    }
+
+    public void check(UnaryExpression elem) {
+        VarType operandType = getType(elem.getOperand());
+
+        System.out.println(operandType);
+
+        if (elem.getOperator() == Token.SUBTRACT) {
+            if (!(operandType.equals(PrimitiveType.INT) || operandType.equals(PrimitiveType.FLOAT))) {
+                throw new TypeError("Operator '-' requires an integer or float operand.");
+            }
+        }
+    }
+
+    public void check(Type elem) {}
+
     public void check(RecordDefinition elem) {
+        if (currentScope.contains(elem.getName())) {
+            throw new ScopeError("Scope Error: Record '" + elem.getName() + "' is already defined in the current scope.");
+        }
+
         if (globalTable.lookup(elem.getName()) instanceof RecordType) {
             return;
         } else if (globalTable.lookup(elem.getName()) != null) {

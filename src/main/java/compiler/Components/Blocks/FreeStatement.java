@@ -10,6 +10,10 @@ public class FreeStatement extends ASTNodeImpl implements Statement {
         this.variableName = variableName;
     }
 
+    public String getVariableName() {
+        return variableName;
+    }
+
     @Override
     public FreeStatement toASTNode() {
         addChild(new ASTNodeImpl("Variable", variableName));
