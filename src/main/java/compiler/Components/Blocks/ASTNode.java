@@ -1,7 +1,9 @@
 package compiler.Components.Blocks;
 
-import compiler.Analyzer.Analyzer;
+import compiler.Analyzer;
+import compiler.Generator;
 
 public interface ASTNode {
     void accept(Analyzer analyzer);
+    void accept(Generator generator);
 }

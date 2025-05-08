@@ -1,7 +1,8 @@
 package compiler.Components.Blocks;
 
-import compiler.Analyzer.Analyzer;
+import compiler.Analyzer;
 import compiler.Components.Token;
+import compiler.Generator;
 
 public class BinaryExpression extends ASTNodeImpl implements Expression {
     private final Expression left;
@@ -30,5 +31,10 @@ public class BinaryExpression extends ASTNodeImpl implements Expression {
     @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
+    }
+
+    @Override
+    public void accept(Generator generator) {
+        generator.generateBlock(this);
     }
 }

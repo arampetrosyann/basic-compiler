@@ -1,14 +1,12 @@
-package compiler.Parser;
+package compiler;
 
 import compiler.Exceptions.ParserException;
-import compiler.Lexer.Lexer;
 import compiler.Components.Symbol;
 import compiler.Components.Token;
 import compiler.Components.Blocks.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class  Parser {
     private final Lexer lexer;

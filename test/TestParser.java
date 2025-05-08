@@ -2,8 +2,8 @@ import org.junit.Test;
 import java.io.StringReader;
 
 import compiler.Exceptions.ParserException;
-import compiler.Lexer.Lexer;
-import compiler.Parser.Parser;
+import compiler.Lexer;
+import compiler.Parser;
 
 import static org.junit.Assert.assertThrows;
 

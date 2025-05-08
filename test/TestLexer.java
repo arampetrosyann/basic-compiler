@@ -2,7 +2,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 
 import java.io.StringReader;
-import compiler.Lexer.Lexer;
+import compiler.Lexer;
 
 public class TestLexer {
     @Test

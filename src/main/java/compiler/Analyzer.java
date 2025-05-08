@@ -1,5 +1,6 @@
-package compiler.Analyzer;
+package compiler;
 
+import compiler.Components.SymbolTableManager;
 import compiler.Components.Token;
 import compiler.Components.Blocks.*;
 import compiler.Components.Semantic.*;
@@ -13,8 +14,7 @@ import java.util.ArrayList;
 
 public class Analyzer {
     private static Analyzer instance;
-    private SymbolTable globalTable;
-    private SymbolTable currentScope;
+    private static SymbolTableManager symbolTableManager;
     // for checking the return type
     private FunctionType currentFunctionType;
 
@@ -28,27 +28,28 @@ public class Analyzer {
     }
 
     public void reset() {
-        globalTable = new SymbolTable(SymbolTableType.GLOBAL, null);
+        symbolTableManager = SymbolTableManager.getInstance();
+        symbolTableManager.reset();
+
         setupBuiltins();
-        currentScope = globalTable;
     }
 
     private void setupBuiltins() {
-        globalTable.insert("!", new FunctionType(PrimitiveType.BOOL, List.of(PrimitiveType.BOOL)));
-        globalTable.insert("chr", new FunctionType(PrimitiveType.STRING, List.of(PrimitiveType.INT)));
-        globalTable.insert("floor", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.FLOAT)));
-        globalTable.insert("len", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.STRING)));
-        globalTable.insert("readInt", new FunctionType(PrimitiveType.INT, List.of()));
-        globalTable.insert("readFloat", new FunctionType(PrimitiveType.FLOAT, List.of()));
-        globalTable.insert("readString", new FunctionType(PrimitiveType.STRING, List.of()));
-        globalTable.insert("writeInt", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.INT)));
-        globalTable.insert("writeFloat", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.FLOAT)));
-        globalTable.insert("write", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
-        globalTable.insert("writeln", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("!", new FunctionType(PrimitiveType.BOOL, List.of(PrimitiveType.BOOL)));
+        symbolTableManager.getGlobalTable().insert("chr", new FunctionType(PrimitiveType.STRING, List.of(PrimitiveType.INT)));
+        symbolTableManager.getGlobalTable().insert("floor", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.FLOAT)));
+        symbolTableManager.getGlobalTable().insert("len", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("readInt", new FunctionType(PrimitiveType.INT, List.of()));
+        symbolTableManager.getGlobalTable().insert("readFloat", new FunctionType(PrimitiveType.FLOAT, List.of()));
+        symbolTableManager.getGlobalTable().insert("readString", new FunctionType(PrimitiveType.STRING, List.of()));
+        symbolTableManager.getGlobalTable().insert("writeInt", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.INT)));
+        symbolTableManager.getGlobalTable().insert("writeFloat", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.FLOAT)));
+        symbolTableManager.getGlobalTable().insert("write", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("writeln", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
     }
 
-    public void analyze(ASTNodeImpl node) {
-        node.accept(this);
+    public void analyze(Block n) {
+        n.accept(this);
     }
 
     public void check(ASTNodeImpl node) {}
@@ -60,7 +61,7 @@ public class Analyzer {
             case PRIMITIVE:
                 return mapToPrimitiveType(id);
             case RECORD:
-                VarType found = globalTable.lookup(id);
+                VarType found = symbolTableManager.getGlobalTable().lookup(id);
                 if (!(found instanceof RecordType)) {
                     throw new TypeError("Unknown record type " + id);
                 }
@@ -98,24 +99,14 @@ public class Analyzer {
         throw new TypeError("Unknown expression type " + expr.getClass().getSimpleName());
     }
 
-    private VarType lookup(String identifier) {
-        SymbolTable scope = currentScope;
-        while (scope != null) {
-            VarType type = scope.lookup(identifier);
-            if (type != null) return type;
-            scope = scope.getParent();
-        }
-        throw new ScopeError("Variable " + identifier + " is not defined");
-    }
-
     public void check(Assignment elem) {
         Expression target = elem.getTarget();
         VarType lhsType;
 
         if (target instanceof VarReference ref) {
-            lhsType = lookup(ref.getName());
+            lhsType = symbolTableManager.lookup(ref.getName());
         } else if (target instanceof ArrayAccess access) {
-            VarType arrayType = lookup(access.getArrayName());
+            VarType arrayType = symbolTableManager.lookup(access.getArrayName());
             if (!(arrayType instanceof ArrayType arr)) {
                 throw new TypeError("Trying to index a non-array value");
             }
@@ -148,6 +139,7 @@ public class Analyzer {
         return switch (elem.getOperator()) {
             case LESS, GREATER, LESS_OR_EQUAL, GREATER_OR_EQUAL, EQUAL, NOT_EQUAL -> PrimitiveType.BOOL;
             case ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO -> leftType;
+            case LOGICAL_OR -> rightType;
             default -> throw new OperatorError("Unknown operator " + elem.getOperator());
         };
     }
@@ -173,7 +165,7 @@ public class Analyzer {
     }
 
     public VarType check(ArrayAccess elem) {
-        VarType arrayType = lookup(elem.getArrayName());
+        VarType arrayType = symbolTableManager.lookup(elem.getArrayName());
 
         if (!(arrayType instanceof ArrayType typedArray)) {
             throw new TypeError("Trying to index a non-array value");
@@ -188,7 +180,7 @@ public class Analyzer {
     }
 
     public VarType check(FunctionCall elem) {
-        FunctionType functionType = (FunctionType) lookup(elem.getFunctionName());
+        FunctionType functionType = (FunctionType) symbolTableManager.lookup(elem.getFunctionName());
         List<VarType> paramTypes = functionType.getParameters();
         String name = elem.getFunctionName();
 
@@ -261,7 +253,7 @@ public class Analyzer {
 
     public VarType check(CallExpression elem) {
         String name = elem.getType();
-        VarType lookedUp = lookup(name);
+        VarType lookedUp = symbolTableManager.lookup(name);
 
         if (lookedUp instanceof FunctionType functionType) {
             List<VarType> expectedArgs = functionType.getParameters();
@@ -320,11 +312,11 @@ public class Analyzer {
     }
 
     public VarType check(VarReference elem) {
-        return lookup(elem.getName());
+        return symbolTableManager.lookup(elem.getName());
     }
 
     public void check(VariableDeclaration elem) {
-        if (currentScope.contains(elem.getIdentifier())) {
+        if (symbolTableManager.getCurrentScope().contains(elem.getIdentifier())) {
             throw new ScopeError("Variable '" + elem.getIdentifier() + "' is already defined");
         }
 
@@ -341,7 +333,7 @@ public class Analyzer {
             default -> throw new TypeError("Unsupported type category for '" + elem.getIdentifier() + "'");
         }
 
-        currentScope.insert(elem.getIdentifier(), declaredType);
+        symbolTableManager.getCurrentScope().insert(elem.getIdentifier(), declaredType);
 
         if (elem.getValue() != null) {
             VarType valueType = check(elem.getValue());
@@ -365,24 +357,28 @@ public class Analyzer {
 
         FunctionType functionType = new FunctionType(returnType, paramTypes);
 
-        globalTable.insert(elem.getName(), functionType);
+        symbolTableManager.getGlobalTable().insert(elem.getName(), functionType);
 
-        currentScope = new SymbolTable(SymbolTableType.SCOPE, currentScope);
+        SymbolTable newSymbolTable = new SymbolTable(SymbolTableType.SCOPE, symbolTableManager.getCurrentScope());
+
+        symbolTableManager.getCurrentScope().add(elem, newSymbolTable);
+        symbolTableManager.enterSymbolTable(elem);
+
         currentFunctionType = functionType;
 
         for (int i = 0; i < elem.getParameters().size(); i++) {
             Param param = elem.getParameters().get(i);
-            currentScope.insert(param.getName(), paramTypes.get(i));
+            symbolTableManager.getCurrentScope().insert(param.getName(), paramTypes.get(i));
         }
 
         elem.getBody().accept(this);
 
         currentFunctionType = null;
-        currentScope = currentScope.getParent();
+        symbolTableManager.leaveSymbolTable();
     }
 
     public void check(FreeStatement elem) {
-        lookup(elem.getVariableName());
+        symbolTableManager.lookup(elem.getVariableName());
     }
 
     public VarType check(UnaryExpression elem) {
@@ -400,13 +396,13 @@ public class Analyzer {
     public void check(Type elem) {}
 
     public void check(RecordDefinition elem) {
-        if (globalTable.contains(elem.getName())) {
+        if (symbolTableManager.getGlobalTable().contains(elem.getName())) {
             throw new RecordError("Record '" + elem.getName() + "' is already defined");
         }
 
-        if (globalTable.lookup(elem.getName()) instanceof RecordType) {
+        if (symbolTableManager.getGlobalTable().lookup(elem.getName()) instanceof RecordType) {
             return;
-        } else if (globalTable.lookup(elem.getName()) != null) {
+        } else if (symbolTableManager.getGlobalTable().lookup(elem.getName()) != null) {
             throw new RecordError("Record " + elem.getName() + " already exists");
         }
 
@@ -415,7 +411,7 @@ public class Analyzer {
             fields.put(field.getName(), mapToVarType(field.getType()));
         }
 
-        globalTable.insert(elem.getName(), new RecordType(fields));
+        symbolTableManager.getGlobalTable().insert(elem.getName(), new RecordType(elem.getName(), fields));
     }
 
     public void check(Param elem) {}
@@ -441,7 +437,7 @@ public class Analyzer {
     }
 
     public void check(ForLoop elem) {
-        VarType loopVarType = lookup(elem.getVariable());
+        VarType loopVarType = symbolTableManager.lookup(elem.getVariable());
 
         VarType startType = check(elem.getStart());
         VarType endType = check(elem.getMaxValue());
@@ -455,12 +451,14 @@ public class Analyzer {
     }
 
     public void check(Block block) {
-        currentScope = new SymbolTable(SymbolTableType.SCOPE, currentScope);
+        SymbolTable newSymbolTable = new SymbolTable(SymbolTableType.SCOPE, symbolTableManager.getCurrentScope());
+        symbolTableManager.getCurrentScope().add(block, newSymbolTable);
+        symbolTableManager.enterSymbolTable(block);
 
         for (Statement stmt : block.getStatements()) {
             stmt.accept(this);
         }
 
-        currentScope = currentScope.getParent();
+        symbolTableManager.leaveSymbolTable();
     }
 }

@@ -1,7 +1,6 @@
-package compiler.Lexer;
+package compiler;
 
 import compiler.Exceptions.LexerException;
-import compiler.Regex;
 import compiler.Components.Symbol;
 import compiler.Components.Token;
 
