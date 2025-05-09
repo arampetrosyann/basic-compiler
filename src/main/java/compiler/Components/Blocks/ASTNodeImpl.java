@@ -6,10 +6,21 @@ import compiler.Generator;
 public class ASTNodeImpl implements ASTNode {
     private final String type;
     private final String value;
+    private int lineNumber;
 
     public ASTNodeImpl(String type, String value) {
         this.type = type;
         this.value = value;
+    }
+
+    @Override
+    public void setLineNumber(int value) {
+        lineNumber = value;
+    }
+
+    @Override
+    public int getLineNumber() {
+        return lineNumber;
     }
 
     @Override

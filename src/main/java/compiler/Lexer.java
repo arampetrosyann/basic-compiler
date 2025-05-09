@@ -75,7 +75,7 @@ public class Lexer {
                 input.unread(str.charAt(i));
             }
         } catch (IOException e) {
-            throw new LexerException("IO exception during push back");
+            throw new InternalError("IO exception during push back");
         }
     }
 
@@ -92,7 +92,7 @@ public class Lexer {
 
             if (currentCharacter == '\n') currentLine++;
         } catch (IOException e) {
-            throw new LexerException("IO exception while reading a character", currentLine);
+            throw new LexerException("Exception while reading a character", currentLine);
         }
     }
     
@@ -122,7 +122,7 @@ public class Lexer {
             }
 
             if (isComplete) {
-                throw new IllegalArgumentException("Unterminated string on the line " + currentLine);
+                throw new LexerException("Unterminated string", currentLine);
             }
 
             lexeme.append(currentCharacter);
@@ -177,7 +177,7 @@ public class Lexer {
         }
 
         if (candidateSymbol == null) {
-            throw new IllegalArgumentException("Illegal character on the line " + currentLine);
+            throw new LexerException("Illegal character", currentLine);
         }
 
         // push back extra characters

@@ -40,7 +40,7 @@ public class Generator {
         try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
             fos.write(bytecode);
         } catch (Exception e) {
-            throw new GeneratorException("Failed to save class file - " + filePath);
+            throw new InternalError("Failed to save class file - " + filePath);
         }
     }
 
@@ -391,7 +391,7 @@ public class Generator {
         generateBlock(elem.getSize());
 
         if (elem.getElementType().getCategory() == TypeCategory.ARRAY) {
-            throw new TypeError("Illegal type when creating an array");
+            throw new TypeError("Illegal type when creating an array. Nested arrays are not supported", elem.getLineNumber());
         }
 
         String desc = getTypeDescriptor(elem.getElementType());

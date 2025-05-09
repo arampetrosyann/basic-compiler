@@ -10,8 +10,8 @@ public class GeneratorException extends RuntimeException {
   }
 
   private static String formatMessage(String message, Integer lineNumber) {
-    String processedMessage = message.contains("GeneratorError: ") ? message : "Lexer Error: " + message;
+    String processedMessage = message.contains("GeneratorError: ") ? message : "GeneratorError: " + message;
 
-    return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;
+    return lineNumber == null ? processedMessage : processedMessage + " | line number: " + lineNumber;
   }
 }
