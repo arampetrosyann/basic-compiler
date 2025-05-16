@@ -26,8 +26,12 @@ public class Generator {
     private final String outputDirectory;
     private ClassWriter classWriter;
     private final Stack<MethodVisitor> methodVisitorStack = new Stack<>();
+    private final Stack<Map<String, Integer>> slotStack = new Stack<>();
+
+    private static Analyzer analyzer;
 
     public Generator(File file) {
+        analyzer = Analyzer.getInstance();
         symbolTableManager = SymbolTableManager.getInstance();
 
         className = file.getName().split("\\.")[0];
@@ -150,38 +154,51 @@ public class Generator {
     }
 
     private void generateReadInt() {
-        // MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "readInt", "()I", null, null);
+        MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC,"readInt","()I",null,null);
 
-        // mv.visitCode();
+        mv.visitCode();
 
-        // @Todo implement this function
+        mv.visitTypeInsn(Opcodes.NEW, "java/util/Scanner");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "in", "Ljava/io/InputStream;");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/Scanner", "<init>", "(Ljava/io/InputStream;)V", false);
 
-        //  mv.visitInsn(Opcodes.IRETURN);
-        // mv.visitMaxs(0, 0);
-        // mv.visitEnd();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/Scanner", "nextInt", "()I", false);
+        mv.visitInsn(Opcodes.IRETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
     }
 
     private void generateReadFloat() {
-        //MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "readFloat", "()F", null, null);
+        MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC,"readFloat","()F",null,null);
 
-        // mv.visitCode();
-        // @Todo implement this function
+        mv.visitCode();
 
-        //  mv.visitInsn(Opcodes.FRETURN);
-        // mv.visitMaxs(0, 0);
-        // mv.visitEnd();
+        mv.visitTypeInsn(Opcodes.NEW, "java/util/Scanner");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "in", "Ljava/io/InputStream;");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/Scanner", "<init>", "(Ljava/io/InputStream;)V", false);
+
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/Scanner", "nextFloat", "()F", false);
+        mv.visitInsn(Opcodes.FRETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
     }
 
     private void generateReadString() {
-        // MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "readString", "()Ljava/lang/String;", null, null);
+        MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "readString", "()Ljava/lang/String;", null, null);
 
-        // mv.visitCode();
+        mv.visitCode();
 
-        // @Todo implement this function
+        mv.visitTypeInsn(Opcodes.NEW, "java/util/Scanner");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "in", "Ljava/io/InputStream;");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/Scanner", "<init>", "(Ljava/io/InputStream;)V", false);
 
-        //  mv.visitInsn(Opcodes.ARETURN);
-        // mv.visitMaxs(0, 0);
-        // mv.visitEnd();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/Scanner", "nextLine", "()Ljava/lang/String;", false);
+        mv.visitInsn(Opcodes.ARETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
     }
 
     private void generateWriteInt() {
@@ -270,6 +287,19 @@ public class Generator {
         };
     }
 
+    private int getLoadOpcode(String typeDescriptor) {
+        if (Objects.equals(typeDescriptor, "Ljava/lang/String;")) return Opcodes.ALOAD;
+
+        String firstElem = typeDescriptor.substring(0, 1);
+
+        return switch (firstElem) {
+            case "I", "Z" -> Opcodes.ILOAD;     // int or boolean
+            case "F" -> Opcodes.FLOAD;          // float
+            case "[", "L" -> Opcodes.ALOAD;     // array or record
+            default -> throw new GeneratorException("Unsupported type descriptor: " + typeDescriptor);
+        };
+    }
+
     private String getTypeDescriptor(Type type) {
         if (type == null) return "V";
 
@@ -296,7 +326,19 @@ public class Generator {
 
                 yield "L" + recordType.getRecordName() + ";";
             }
-            case FUNCTION -> ""; // @Todo not handled;
+            case FUNCTION -> {
+                FunctionType func = (FunctionType) varType;
+                StringBuilder descriptor = new StringBuilder("(");
+
+                for (VarType paramType : func.getParameters()) {
+                    descriptor.append(getTypeDescriptor(paramType));
+                }
+
+                descriptor.append(")");
+                descriptor.append(getTypeDescriptor(func.getReturnType()));
+
+                yield descriptor.toString();
+            }
         };
     }
 
@@ -328,6 +370,23 @@ public class Generator {
         return descriptor.toString();
     }
 
+    private String getMethodDescriptor(CallExpression elem) {
+        String functionName = elem.getType();
+        FunctionType functionType = (FunctionType) symbolTableManager.lookup(functionName);
+
+        StringBuilder descriptor = new StringBuilder("(");
+
+        for (VarType paramType : functionType.getParameters()) {
+            descriptor.append(getTypeDescriptor(paramType));
+        }
+
+        descriptor.append(")");
+        descriptor.append(getTypeDescriptor(functionType.getReturnType()));
+
+        return descriptor.toString();
+    }
+
+
     public void generateBlock(ASTNodeImpl node) {
     }
 
@@ -356,12 +415,153 @@ public class Generator {
     }
 
     public void generateBlock(Assignment elem) {
-        // @Todo
-        // use symbolTableManager
+        Expression target = elem.getTarget();
+        Expression value = elem.getValue();
+
+        if (target instanceof VarReference ref) {
+            // Regular variable assignment
+            String varName = ref.getName();
+
+            generateBlock(value);
+
+            VarType varType = symbolTableManager.lookup(varName);
+            String descriptor = getTypeDescriptor(varType);
+            int slot = resolveSlot(varName);
+
+            methodVisitorStack.peek().visitVarInsn(getStoreOpcode(descriptor), slot);
+            return;
+        }
+
+        if (target instanceof ArrayAccess access) {
+            MethodVisitor mv = methodVisitorStack.peek();
+
+            // Load array reference
+            int slot = resolveSlot(access.getArrayName());
+            mv.visitVarInsn(Opcodes.ALOAD, slot);
+
+            // Load index
+            generateBlock(access.getIndex());
+
+            // Load value to store
+            generateBlock(value);
+
+            // Get element type to determine correct opcode
+            VarType arrayType = symbolTableManager.lookup(access.getArrayName());
+            if (!(arrayType instanceof ArrayType array)) {
+                throw new GeneratorException("Expected array type but found: " + arrayType);
+            }
+
+            VarType elemType = array.getElementType();
+            String typeDesc = getTypeDescriptor(elemType);
+
+            // Store into array
+            switch (typeDesc) {
+                case "I", "Z" -> mv.visitInsn(Opcodes.IASTORE);
+                case "F" -> mv.visitInsn(Opcodes.FASTORE);
+                default -> mv.visitInsn(Opcodes.AASTORE); // For objects like String, record, etc.
+            }
+
+            return;
+        }
+
+        throw new GeneratorException("Unsupported assignment target: " + target.getClass().getSimpleName());
     }
 
     public void generateBlock(BinaryExpression elem) {
-        // @Todo
+        Expression left = elem.getLeft();
+        Expression right = elem.getRight();
+        Token op = elem.getOperator();
+
+        // Evaluate left and right operands
+        generateBlock(left);
+        generateBlock(right);
+
+        MethodVisitor mv = methodVisitorStack.peek();
+
+        VarType leftType = analyzer.getType(left);
+        VarType resultType = analyzer.getType(elem);
+
+        TypeName operandType = leftType.getName();
+        TypeName resultTypeName = resultType.getName();
+
+        if (resultTypeName == TypeName.BOOLEAN && operandType == TypeName.INTEGER) {
+            Label trueLabel = new Label();
+            Label endLabel = new Label();
+
+            switch (op) {
+                case LESS -> mv.visitJumpInsn(Opcodes.IF_ICMPLT, trueLabel);
+                case GREATER -> mv.visitJumpInsn(Opcodes.IF_ICMPGT, trueLabel);
+                case LESS_OR_EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPLE, trueLabel);
+                case GREATER_OR_EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPGE, trueLabel);
+                case EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPEQ, trueLabel);
+                case NOT_EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPNE, trueLabel);
+                default -> throw new GeneratorException("Unsupported integer comparison: " + op);
+            }
+
+            mv.visitInsn(Opcodes.ICONST_0); // false
+            mv.visitJumpInsn(Opcodes.GOTO, endLabel);
+            mv.visitLabel(trueLabel);
+            mv.visitInsn(Opcodes.ICONST_1); // true
+            mv.visitLabel(endLabel);
+            return;
+        }
+
+        switch (operandType) {
+            case INTEGER -> {
+                switch (op) {
+                    case ADD -> mv.visitInsn(Opcodes.IADD);
+                    case SUBTRACT -> mv.visitInsn(Opcodes.ISUB);
+                    case MULTIPLY -> mv.visitInsn(Opcodes.IMUL);
+                    case DIVIDE -> mv.visitInsn(Opcodes.IDIV);
+                    case MODULO -> mv.visitInsn(Opcodes.IREM);
+                    default -> throw new GeneratorException("Unsupported int operator: " + op);
+                }
+            }
+
+            case FLOAT -> {
+                switch (op) {
+                    case ADD -> mv.visitInsn(Opcodes.FADD);
+                    case SUBTRACT -> mv.visitInsn(Opcodes.FSUB);
+                    case MULTIPLY -> mv.visitInsn(Opcodes.FMUL);
+                    case DIVIDE -> mv.visitInsn(Opcodes.FDIV);
+                    case MODULO -> mv.visitInsn(Opcodes.FREM); // Optional
+                    default -> throw new GeneratorException("Unsupported float operator: " + op);
+                }
+            }
+
+            case BOOLEAN -> {
+                Label trueLabel = new Label();
+                Label endLabel = new Label();
+
+                switch (op) {
+                    case LOGICAL_AND -> {
+                        mv.visitJumpInsn(Opcodes.IFEQ, endLabel);
+                        generateBlock(right); // re-evaluate right side
+                        mv.visitJumpInsn(Opcodes.IFEQ, endLabel);
+                        mv.visitInsn(Opcodes.ICONST_1);
+                        mv.visitJumpInsn(Opcodes.GOTO, trueLabel);
+                        mv.visitLabel(endLabel);
+                        mv.visitInsn(Opcodes.ICONST_0);
+                        mv.visitLabel(trueLabel);
+                    }
+
+                    case LOGICAL_OR -> {
+                        mv.visitJumpInsn(Opcodes.IFNE, trueLabel);
+                        generateBlock(right);
+                        mv.visitJumpInsn(Opcodes.IFNE, trueLabel);
+                        mv.visitInsn(Opcodes.ICONST_0);
+                        mv.visitJumpInsn(Opcodes.GOTO, endLabel);
+                        mv.visitLabel(trueLabel);
+                        mv.visitInsn(Opcodes.ICONST_1);
+                        mv.visitLabel(endLabel);
+                    }
+
+                    default -> throw new GeneratorException("Unsupported bool operator: " + op);
+                }
+            }
+
+            default -> throw new GeneratorException("Unsupported operand type in binary expression: " + operandType);
+        }
     }
 
     public void generateBlock(Literal elem) {
@@ -414,8 +614,26 @@ public class Generator {
     }
 
     public void generateBlock(ArrayAccess elem) {
+        MethodVisitor mv = methodVisitorStack.peek();
+
+        int arraySlot = resolveSlot(elem.getArrayName());
+        mv.visitVarInsn(Opcodes.ALOAD, arraySlot);
+
         generateBlock(elem.getIndex());
-        methodVisitorStack.peek().visitInsn(Opcodes.IALOAD);
+
+        VarType arrayType = symbolTableManager.lookup(elem.getArrayName());
+        if (!(arrayType instanceof ArrayType array)) {
+            throw new GeneratorException("Expected array type but found: " + arrayType);
+        }
+
+        VarType elemType = array.getElementType();
+        String typeDesc = getTypeDescriptor(elemType);
+
+        switch (typeDesc) {
+            case "I", "Z" -> mv.visitInsn(Opcodes.IALOAD);
+            case "F" -> mv.visitInsn(Opcodes.FALOAD);
+            default -> mv.visitInsn(Opcodes.AALOAD); // String, records
+        }
     }
 
     public void generateBlock(FunctionCall elem) {
@@ -423,7 +641,19 @@ public class Generator {
             generateBlock(arg);
         }
 
-        methodVisitorStack.peek().visitMethodInsn(Opcodes.INVOKESTATIC, className, elem.getFunctionName(), getMethodDescriptor(elem), false);
+        String name = elem.getFunctionName();
+
+        // Also handle built-in read functions
+        switch (name) {
+            case "readInt" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readInt", "()I", false);
+            case "readFloat" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readFloat", "()F", false);
+            case "readString" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readString", "()Ljava/lang/String;", false);
+            default -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, name, getMethodDescriptor(elem), false);
+        }
     }
 
     public void generateBlock(IfStatement elem) {
@@ -458,19 +688,71 @@ public class Generator {
 
     public void generateBlock(CallExpression elem) {
         String name = elem.getType();
-        VarType lookedUp = symbolTableManager.lookup(name);
 
-        // @Todo
+        VarType type = symbolTableManager.lookup(name);
+
+        if (type instanceof RecordType recordType) {
+            String internalName = recordType.getRecordName();
+            MethodVisitor mv = methodVisitorStack.peek();
+
+            // Allocate new record object
+            mv.visitTypeInsn(Opcodes.NEW, internalName);
+            mv.visitInsn(Opcodes.DUP);
+
+            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, internalName, "<init>", "()V", false);
+
+            List<String> fieldNames = recordType.getFieldNames();
+            List<Expression> args = elem.getArguments();
+
+            for (int i = 0; i < fieldNames.size(); i++) {
+                mv.visitInsn(Opcodes.DUP); // keep reference on stack
+                generateBlock(args.get(i)); // push field value
+                String fieldName = fieldNames.get(i);
+                VarType fieldType = recordType.getFieldValue(fieldName);
+                mv.visitFieldInsn(Opcodes.PUTFIELD, internalName, fieldName, getTypeDescriptor(fieldType));
+            }
+
+            return;
+        }
+
+        // Generate bytecode for all arguments
+        for (Expression arg : elem.getArguments()) {
+            generateBlock(arg);
+        }
+
+        // Handle built-in read functions
+        switch (name) {
+            case "readInt" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readInt", "()I", false);
+            case "readFloat" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readFloat", "()F", false);
+            case "readString" -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC, className, "readString", "()Ljava/lang/String;", false);
+            default -> methodVisitorStack.peek().visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    className,
+                    name,
+                    getMethodDescriptor(elem),
+                    false
+            );
+        }
     }
 
     public void generateBlock(RecordFieldAccess elem) {
-        // @Todo
     }
 
     public void generateBlock(VarReference elem) {
         VarType varType = symbolTableManager.lookup(elem.getName());
 
-        // @Todo
+        if (varType == null) {
+            throw new GeneratorException("Variable '" + elem.getName() + "' not found in scope");
+        }
+
+        String typeDescriptor = getTypeDescriptor(varType);
+        int loadOpcode = getLoadOpcode(typeDescriptor);
+
+        int slot = resolveSlot(elem.getName());
+        methodVisitorStack.peek().visitVarInsn(loadOpcode, slot);
     }
 
     public void generateBlock(VariableDeclaration elem) {
@@ -508,6 +790,7 @@ public class Generator {
 
         org.objectweb.asm.Type asmType = org.objectweb.asm.Type.getType(typeDescriptor);
         int slot = localVariablesSorter.newLocal(asmType);
+        slotStack.peek().put(elem.getIdentifier(), slot);
 
         int storeOp = getStoreOpcode(typeDescriptor);
         localVariablesSorter.visitVarInsn(storeOp, slot);
@@ -540,6 +823,24 @@ public class Generator {
         methodVisitorStack.peek().visitCode();
 
         symbolTableManager.enterSymbolTable(elem);
+        slotStack.push(new HashMap<>());
+
+        // Assign slots for the parameters
+        for (Param param : elem.getParameters()) {
+            String typeDesc = getTypeDescriptor(param.getType());
+            org.objectweb.asm.Type asmType = org.objectweb.asm.Type.getType(typeDesc);
+
+            int slot = localVariablesSorter.newLocal(asmType);
+            slotStack.peek().put(param.getName(), slot);
+
+            Label start = new Label();
+            Label end = new Label();
+
+            localVariablesSorter.visitLabel(start);
+            localVariablesSorter.visitLabel(end);
+
+            localVariablesSorter.visitLocalVariable(param.getName(), asmType.getDescriptor(),null, start, end, slot);
+        }
 
         generateBlock(elem.getBody());
 
@@ -597,26 +898,111 @@ public class Generator {
     }
 
     public void generateBlock(WhileLoop elem) {
-        // @Todo
+        MethodVisitor mv = methodVisitorStack.peek();
+
+        Label loopStart = new Label();
+        Label loopEnd = new Label();
+
+        mv.visitLabel(loopStart);
+        generateBlock(elem.getCondition());
+        mv.visitJumpInsn(Opcodes.IFEQ, loopEnd);
+        generateBlock(elem.getBody());
+
+        mv.visitJumpInsn(Opcodes.GOTO, loopStart);
+
+        mv.visitLabel(loopEnd);
     }
 
     public void generateBlock(DoWhileLoop elem) {
-        // @Todo
+        MethodVisitor mv = methodVisitorStack.peek();
+
+        Label loopStart = new Label();
+        Label loopCondition = new Label();
+
+        mv.visitLabel(loopStart);
+
+        generateBlock(elem.getBody());
+
+        mv.visitLabel(loopCondition);
+
+        generateBlock(elem.getCondition());
+
+        // if the condition is true, jump back to the start of the body
+        mv.visitJumpInsn(Opcodes.IFNE, loopStart);
     }
 
     public void generateBlock(ForLoop elem) {
-        VarType loopVarType = symbolTableManager.lookup(elem.getVariable());
+        MethodVisitor mv = methodVisitorStack.peek();
 
-        // @Todo
+        String varName = elem.getVariable();
+
+        generateBlock(elem.getStart());
+        VarType varType = analyzer.getType(elem.getStart());
+        String typeDescriptor = getTypeDescriptor(varType);
+        int slot = ((LocalVariablesSorter) mv).newLocal(org.objectweb.asm.Type.getType(typeDescriptor));
+        slotStack.peek().put(varName, slot);
+
+        int storeOpcode = getStoreOpcode(typeDescriptor);
+        mv.visitVarInsn(storeOpcode, slot);
+
+        Label loopStart = new Label();
+        Label loopEnd = new Label();
+
+        mv.visitLabel(loopStart);
+
+        // Load loop variable
+        int loadOpcode = getLoadOpcode(typeDescriptor);
+        mv.visitVarInsn(loadOpcode, slot);
+
+        // Push max value
+        generateBlock(elem.getMaxValue());
+
+        // check if iterator reached its max value to exit loop
+        switch (varType.getName()) {
+            case INTEGER -> mv.visitJumpInsn(Opcodes.IF_ICMPGE, loopEnd);
+            case FLOAT -> {
+                mv.visitInsn(Opcodes.FCMPG);
+                mv.visitJumpInsn(Opcodes.IFGE, loopEnd);
+            }
+            default -> throw new GeneratorException("Unsupported for-loop type: " + varType.getName());
+        }
+
+        generateBlock(elem.getBody());
+
+        // add step to iterator
+        mv.visitVarInsn(loadOpcode, slot);
+        generateBlock(elem.getStep());
+
+        switch (varType.getName()) {
+            case INTEGER -> mv.visitInsn(Opcodes.IADD);
+            case FLOAT -> mv.visitInsn(Opcodes.FADD);
+            default -> throw new GeneratorException("Unsupported for-loop type: " + varType.getName());
+        }
+
+        mv.visitVarInsn(storeOpcode, slot); // store updated iterator variable
+        mv.visitJumpInsn(Opcodes.GOTO, loopStart);
+
+        mv.visitLabel(loopEnd);
     }
 
     public void generateBlock(Block block) {
         symbolTableManager.enterSymbolTable(block);
+        slotStack.push(new HashMap<>());
 
         for (Statement stmt : block.getStatements()) {
             stmt.accept(this);
         }
 
+        slotStack.pop();
         symbolTableManager.leaveSymbolTable();
+    }
+
+    private int resolveSlot(String name) {
+        for (int i = slotStack.size() - 1; i >= 0; i--) {
+            if (slotStack.get(i).containsKey(name)) {
+                return slotStack.get(i).get(name);
+            }
+        }
+        throw new GeneratorException("Slot not found for variable: " + name);
     }
 }

@@ -1,5 +1,7 @@
 package compiler.Components.Semantic;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class RecordType extends VarType {
@@ -27,6 +29,10 @@ public class RecordType extends VarType {
 
     public Map<String, VarType> getFields() {
         return fields;
+    }
+
+    public List<String> getFieldNames() {
+        return new ArrayList<>(fields.keySet());
     }
 
     @Override

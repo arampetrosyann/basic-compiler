@@ -84,6 +84,10 @@ public class Analyzer {
         };
     }
 
+    public VarType getType(Expression expr) {
+        return check(expr);
+    }
+
     private VarType check(Expression expr) {
         if (expr instanceof Literal lit) return check(lit);
         if (expr instanceof VarReference ref) return check(ref);
