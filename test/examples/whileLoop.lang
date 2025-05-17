@@ -1,0 +1,9 @@
+fun main() {
+    i int = 0;
+    while (i < 3) {
+        i = i + 1;
+    }
+
+    write("i = ");
+    writeInt(i);
+}

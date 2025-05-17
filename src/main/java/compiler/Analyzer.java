@@ -110,7 +110,8 @@ public class Analyzer {
         if (target instanceof VarReference ref) {
             lhsType = symbolTableManager.lookup(ref.getName());
         } else if (target instanceof ArrayAccess access) {
-            VarType arrayType = symbolTableManager.lookup(access.getArrayName());
+            VarType arrayType = check(access.getArrayExpr());
+
             if (!(arrayType instanceof ArrayType arr)) {
                 throw new TypeError("Trying to index a non-array value", access.getLineNumber());
             }
@@ -169,7 +170,7 @@ public class Analyzer {
     }
 
     public VarType check(ArrayAccess elem) {
-        VarType arrayType = symbolTableManager.lookup(elem.getArrayName());
+        VarType arrayType = check(elem.getArrayExpr());
 
         if (!(arrayType instanceof ArrayType typedArray)) {
             throw new TypeError("Trying to index a non-array value", elem.getLineNumber());
@@ -300,17 +301,19 @@ public class Analyzer {
     }
 
     public VarType check(RecordFieldAccess elem) {
-        VarType recordType = check(elem.getRecord());
+        Expression recordExpr = elem.getRecord();
+        VarType recordType = check(recordExpr); // recursively check inner expression
 
         if (!(recordType instanceof RecordType rec)) {
             throw new TypeError("Attempting to access field of non-record type", elem.getLineNumber());
         }
 
         String fieldName = elem.getFieldName();
-
         if (!rec.hasField(fieldName)) {
             throw new TypeError("Record does not contain field '" + fieldName + "'", elem.getLineNumber());
         }
+
+        elem.setRecordType(rec);
 
         return rec.getFieldValue(fieldName);
     }

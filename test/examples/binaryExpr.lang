@@ -1,0 +1,8 @@
+fun main() {
+    a float = 1.3;
+    b float = 2.5;
+    c float = a + b;
+
+    write("c = ");
+    writeFloat(c);
+}

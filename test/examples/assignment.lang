@@ -1,0 +1,7 @@
+fun main() {
+    a int = 10;
+    b int = a + 5;
+
+    write("b = ");
+    writeInt(b);
+}

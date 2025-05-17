@@ -54,7 +54,7 @@ public class TestLexer {
         Symbol symbol = lexer.getNextSymbol();
         assertNotNull(symbol);
         assertEquals(Token.STRING, symbol.getToken());
-        assertEquals(input, symbol.getValue());
+        assertEquals("Hello, Compiler!", symbol.getValue());
 
         symbol = lexer.getNextSymbol();
         assertEquals(Token.EOF, symbol.getToken());

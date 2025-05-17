@@ -119,9 +119,7 @@ public class Parser {
             type = parseType();
         } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // User-defined record type
-            Symbol recordName = match(Token.IDENTIFIER);
-            type = new Type(recordName.getValue(), TypeCategory.RECORD);
-            type.setLineNumber(recordName.getLineNumber());
+            type = parseType();
         } else {
             throw new TypeError("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken(), lookahead.getLineNumber());
         }
@@ -218,7 +216,7 @@ public class Parser {
                 match(Token.OPEN_SQUARE_BRACKET);
                 Expression index = parseExpression();
                 match(Token.CLOSE_SQUARE_BRACKET);
-                leftHandSide = new ArrayAccess(identifier.getValue(), index);
+                leftHandSide = new ArrayAccess(leftHandSide, index);
                 leftHandSide.setLineNumber(identifier.getLineNumber());
             } else if (lookahead.getToken() == Token.DOT) {
                 match(Token.DOT);
@@ -515,7 +513,7 @@ public class Parser {
                         match(Token.OPEN_SQUARE_BRACKET);
                         Expression index = parseExpression();
                         match(Token.CLOSE_SQUARE_BRACKET);
-                        expr = new ArrayAccess(identifier.getValue(), index);  // Now expr is an array element reference
+                        expr = new ArrayAccess(expr, index);  // Now expr is an array element reference
                         expr.setLineNumber(identifier.getLineNumber());
                     } else if (lookahead.getToken() == Token.DOT) {
                         match(Token.DOT);

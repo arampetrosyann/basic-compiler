@@ -1,0 +1,22 @@
+Point rec {
+    x int;
+    y int;
+}
+
+fun main() {
+    points Point[] = array [2] of Point;
+    points[0] = Point(1, 2);
+    points[1] = Point(3, 4);
+
+    write("p0 = (");
+    writeInt(points[0].x);
+    write(",");
+    writeInt(points[0].y);
+    writeln(")");
+
+    write("p1 = (");
+    writeInt(points[1].x);
+    write(",");
+    writeInt(points[1].y);
+    writeln(")");
+}

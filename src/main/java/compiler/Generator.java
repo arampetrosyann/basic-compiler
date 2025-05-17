@@ -419,7 +419,6 @@ public class Generator {
         Expression value = elem.getValue();
 
         if (target instanceof VarReference ref) {
-            // Regular variable assignment
             String varName = ref.getName();
 
             generateBlock(value);
@@ -435,18 +434,14 @@ public class Generator {
         if (target instanceof ArrayAccess access) {
             MethodVisitor mv = methodVisitorStack.peek();
 
-            // Load array reference
-            int slot = resolveSlot(access.getArrayName());
-            mv.visitVarInsn(Opcodes.ALOAD, slot);
+            generateBlock(access.getArrayExpr());
 
             // Load index
             generateBlock(access.getIndex());
 
-            // Load value to store
             generateBlock(value);
 
-            // Get element type to determine correct opcode
-            VarType arrayType = symbolTableManager.lookup(access.getArrayName());
+            VarType arrayType = analyzer.getType(access.getArrayExpr());
             if (!(arrayType instanceof ArrayType array)) {
                 throw new GeneratorException("Expected array type but found: " + arrayType);
             }
@@ -458,7 +453,7 @@ public class Generator {
             switch (typeDesc) {
                 case "I", "Z" -> mv.visitInsn(Opcodes.IASTORE);
                 case "F" -> mv.visitInsn(Opcodes.FASTORE);
-                default -> mv.visitInsn(Opcodes.AASTORE); // For objects like String, record, etc.
+                default -> mv.visitInsn(Opcodes.AASTORE);
             }
 
             return;
@@ -524,7 +519,7 @@ public class Generator {
                     case SUBTRACT -> mv.visitInsn(Opcodes.FSUB);
                     case MULTIPLY -> mv.visitInsn(Opcodes.FMUL);
                     case DIVIDE -> mv.visitInsn(Opcodes.FDIV);
-                    case MODULO -> mv.visitInsn(Opcodes.FREM); // Optional
+                    case MODULO -> mv.visitInsn(Opcodes.FREM);
                     default -> throw new GeneratorException("Unsupported float operator: " + op);
                 }
             }
@@ -616,12 +611,11 @@ public class Generator {
     public void generateBlock(ArrayAccess elem) {
         MethodVisitor mv = methodVisitorStack.peek();
 
-        int arraySlot = resolveSlot(elem.getArrayName());
-        mv.visitVarInsn(Opcodes.ALOAD, arraySlot);
+        generateBlock(elem.getArrayExpr());
 
         generateBlock(elem.getIndex());
 
-        VarType arrayType = symbolTableManager.lookup(elem.getArrayName());
+        VarType arrayType = analyzer.getType(elem.getArrayExpr());
         if (!(arrayType instanceof ArrayType array)) {
             throw new GeneratorException("Expected array type but found: " + arrayType);
         }
@@ -680,7 +674,16 @@ public class Generator {
     public void generateBlock(ReturnStatement elem) {
         if (elem.getReturnValue() != null) {
             generateBlock(elem.getReturnValue());
-            methodVisitorStack.peek().visitInsn(Opcodes.IRETURN);
+
+            VarType returnType = analyzer.getType(elem.getReturnValue());
+            String descriptor = getTypeDescriptor(returnType);
+
+            switch (descriptor.charAt(0)) {
+                case 'I', 'Z' -> methodVisitorStack.peek().visitInsn(Opcodes.IRETURN); // int, bool
+                case 'F' -> methodVisitorStack.peek().visitInsn(Opcodes.FRETURN);     // float
+                case 'L', '[' -> methodVisitorStack.peek().visitInsn(Opcodes.ARETURN); // record, string, array
+                default -> throw new GeneratorException("Unsupported return type: " + descriptor);
+            }
         } else {
             methodVisitorStack.peek().visitInsn(Opcodes.RETURN);
         }
@@ -739,7 +742,20 @@ public class Generator {
     }
 
     public void generateBlock(RecordFieldAccess elem) {
+        MethodVisitor mv = methodVisitorStack.peek();
+
+        generateBlock(elem.getRecord());
+
+        RecordType recordType = elem.getRecordType();
+        String internalName = recordType.getRecordName();
+        String fieldName = elem.getFieldName();
+        VarType fieldType = recordType.getFieldValue(fieldName);
+        String descriptor = getTypeDescriptor(fieldType);
+
+        mv.visitFieldInsn(Opcodes.GETFIELD, internalName, fieldName, descriptor);
     }
+
+
 
     public void generateBlock(VarReference elem) {
         VarType varType = symbolTableManager.lookup(elem.getName());
@@ -826,12 +842,19 @@ public class Generator {
         slotStack.push(new HashMap<>());
 
         // Assign slots for the parameters
+        int incomingSlot = 0;
         for (Param param : elem.getParameters()) {
             String typeDesc = getTypeDescriptor(param.getType());
             org.objectweb.asm.Type asmType = org.objectweb.asm.Type.getType(typeDesc);
 
-            int slot = localVariablesSorter.newLocal(asmType);
-            slotStack.peek().put(param.getName(), slot);
+            int localSlot = localVariablesSorter.newLocal(asmType);
+            slotStack.peek().put(param.getName(), localSlot);
+
+            int loadOp = getLoadOpcode(typeDesc);
+            int storeOp = getStoreOpcode(typeDesc);
+
+            methodVisitorStack.peek().visitVarInsn(loadOp, incomingSlot);
+            methodVisitorStack.peek().visitVarInsn(storeOp, localSlot);
 
             Label start = new Label();
             Label end = new Label();
@@ -839,8 +862,11 @@ public class Generator {
             localVariablesSorter.visitLabel(start);
             localVariablesSorter.visitLabel(end);
 
-            localVariablesSorter.visitLocalVariable(param.getName(), asmType.getDescriptor(),null, start, end, slot);
+            localVariablesSorter.visitLocalVariable(param.getName(), asmType.getDescriptor(), null, start, end, localSlot);
+
+            incomingSlot += asmType.getSize();
         }
+
 
         generateBlock(elem.getBody());
 

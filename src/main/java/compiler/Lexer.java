@@ -112,12 +112,12 @@ public class Lexer {
 
         StringBuilder lexeme = new StringBuilder(String.valueOf(currentCharacter));
 
-        // string literals
         if (currentCharacter == '"') {
-            readChar();
+            readChar(); // skip the opening quote
+            StringBuilder value = new StringBuilder();
 
             while (!isComplete && currentCharacter != '"') {
-                lexeme.append(currentCharacter);
+                value.append(currentCharacter);
                 readChar();
             }
 
@@ -125,12 +125,10 @@ public class Lexer {
                 throw new LexerException("Unterminated string", currentLine);
             }
 
-            lexeme.append(currentCharacter);
+            readChar(); // skip the closing quote
 
-            readChar();
-
-            return new Symbol(Token.STRING, currentLine, lexeme.toString());
-        }
+            return new Symbol(Token.STRING, currentLine, value.toString());
+    }
 
         readChar();
 

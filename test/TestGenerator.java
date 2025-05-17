@@ -7,413 +7,351 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
 public class TestGenerator {
-    private final File testFile = new File("./test.class");
+    private static final String FILES_DIR = "./test/examples";
 
-    public void generate(String input) {
-        StringReader reader = new StringReader(input);
-        Lexer lexer = new Lexer(reader);
-        Parser parser = new Parser(lexer);
+    private String runCommand(String... command) throws IOException {
+        ProcessBuilder builder = new ProcessBuilder(command);
+        builder.redirectErrorStream(true);
+        Process process = builder.start();
 
-        Block ast = parser.getAST();
-
-        Analyzer analyzer = Analyzer.getInstance();
-        analyzer.analyze(ast);
-
-        Generator generator = new Generator(testFile);
-
-        generator.generate(ast);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            return reader.lines().collect(Collectors.joining("\n"));
+        }
     }
 
-    public String disassemble() throws Exception {
-        Process process = new ProcessBuilder("javap", "-c", "test.class")
-                .redirectErrorStream(true)
-                .start();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        return reader.lines().collect(Collectors.joining("\n"));
+    private String compileAndRunLangProgram(String filename) throws Exception {
+        File file = new File(FILES_DIR, filename);
+        if (!file.exists()) throw new FileNotFoundException("Missing file: " + file);
+
+        String compileOutput = runCommand("./gradlew", "run", "--args=" + file.getPath());
+        System.out.println("Compile output:\n" + compileOutput);
+
+        return runCommand("java", "test");
     }
 
-    public String getConstantPool() throws Exception {
-        Process process = new ProcessBuilder("javap", "-v", "test.class")
-                .redirectErrorStream(true)
-                .start();
+    private void compileLangFile(String filename) throws IOException {
+        ProcessBuilder pb = new ProcessBuilder("./gradlew", "run", "--args=test/examples/" + filename);
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        return reader.lines().collect(Collectors.joining("\n"));
-    }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            while (reader.readLine() != null) {} // consume output
+        } catch (IOException ignored) {}
 
-    private void expectBytecode(String output, String expectedInstruction) {
-        assertTrue("Expected bytecode to contain " + expectedInstruction, output.contains(expectedInstruction));
-    }
-
-
-    @Before
-    public void resetAnalyzer() {
-        Analyzer.getInstance().reset();
+        try {
+            process.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @After
-    public void removeFile() {
-        try {
-            testFile.delete();
-        } catch (Error e) {
-            System.out.println(e.getMessage());
+    public void cleanUpClassFiles() {
+        File dir = new File(".");
+        File[] classFiles = dir.listFiles((d, name) -> name.endsWith(".class"));
+
+        if (classFiles != null) {
+            for (File file : classFiles) {
+                file.delete();
+            }
         }
     }
 
     @Test
-    public void testConstantPoolDump() throws Exception {
-        String code = """
-                fun main() {
-                    s string = "hello";
-                    x int = 123;
-                }
-                """;
+    public void testAssignment() throws Exception {
+        String output = compileAndRunLangProgram("assignment.lang");
 
-        generate(code);
+        System.out.println("Program Output:\n" + output);
 
-        String output = getConstantPool();
-
-        assertTrue("Expected 'hello' in constant pool", output.contains("hello"));
-        assertTrue("Expected 123 in constant pool", output.contains("123"));
+        assertTrue("Expected 'b = 15'", output.contains("b = 15"));
     }
 
     @Test
-    public void testGenerate_ValidAssignment() throws Exception {
-        String code = """
-                fun main() {
-                    a int = 10;
-                    b int = a + 5;
-                }
-                """;
+    public void testUnaryExpression() throws Exception {
+        String output = compileAndRunLangProgram("unaryExpr.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "istore_1");
-        expectBytecode(output, "iload_1");
-        expectBytecode(output, "iadd");
+        assertTrue("Expected 'c = -1'", output.contains("c = -1"));
     }
 
     @Test
-    public void testGenerate_ValidUnaryxpression() throws Exception {
-        String code = """
-                fun main() {
-                    a int = 1;
-                    c int = -a;
-                }
-                """;
+    public void testBinaryExpression() throws Exception {
+        String output = compileAndRunLangProgram("binaryExpr.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "iload_1");
-        expectBytecode(output, "ineg");
+        assertTrue("Expected 'c = 3.8'", output.contains("c = 3.8"));
     }
 
     @Test
-    public void testGenerate_ValidBinaryExpression() throws Exception {
-        String code = """
-                fun main() {
-                    a int = 1;
-                    b int = 2;
-                    c int = a + b;
-                }
-                """;
+    public void testNestedBlocks() throws Exception {
+        String output = compileAndRunLangProgram("nestedBlocks.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "iadd");
+        assertTrue("Expected 'c = 21'", output.contains("c = 21"));
     }
 
     @Test
-    public void testGenerate_ValidNestedBlocks() throws Exception {
-        String code = """
-                fun main() {
-                    a int = 5;
-                    {
-                        b int = a + 2;
-                        {
-                            c int = b * 3;
-                        }
-                    }
-                }
-                """;
+    public void testIfStatement() throws Exception {
+        String output = compileAndRunLangProgram("ifStatement.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "imul");
+        assertTrue("Expected 'b = 5'", output.contains("b = 5"));
     }
 
     @Test
-    public void testGenerate_ValidIf() throws Exception {
-        String code = """
-                fun main() {
-                    a bool = true;
-                    if (a) {
-                        b int = 10;
-                    } else {
-                       b int = 5;
-                    }
-                }
-                """;
+    public void testForLoop() throws Exception {
+        String output = compileAndRunLangProgram("forLoop.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "ifeq");
-        expectBytecode(output, "goto");
+        assertTrue("Expected 'j = 1'", output.contains("j = 1"));
+        assertTrue("Expected 'j = 2'", output.contains("j = 2"));
+        assertTrue("Expected 'j = 3'", output.contains("j = 3"));
     }
 
     @Test
-    public void testGenerate_ValidForLoop() throws Exception {
-        String code = """
-                fun main() {
-                    i int = 0;
-                    for (i, 0, 10, 1) {
-                        x int = 2;
-                    }
-                }
-                """;
+    public void testWhileLoop() throws Exception {
+        String output = compileAndRunLangProgram("whileLoop.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "goto");
+        assertTrue("Expected 'i = 3'", output.contains("i = 3"));
     }
 
     @Test
-    public void testGenerate_ValidForLoop_Float() throws Exception {
-        String code = """
-                fun main() {
-                    i float = 0.0;
-                    for (i, 0.0, 5.0, 0.5) {
-                        x int = 2;
-                    }
-                }
-                """;
+    public void testDoWhileLoop() throws Exception {
+        String output = compileAndRunLangProgram("doWhileLoop.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "goto");
+        assertTrue("Expected 'x = 10'", output.contains("x = 10"));
     }
 
     @Test
-    public void testGenerate_ValidWhileLoop() throws Exception {
-        String code = """
-                fun main() {
-                    i int = 0;
-                    while (i < 3) {
-                        i = i + 1;
-                    }
-                }
-                """;
+    public void testRecordUsage() throws Exception {
+        String output = compileAndRunLangProgram("record.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "goto");
+        assertTrue("Expected 'name: me'", output.contains("name: me"));
+        assertTrue("Expected 'history[0] = 1'", output.contains("history[0] = 1"));
+        assertTrue("Expected 'location (x,y): (3,7)'", output.contains("location (x,y): (3,7)"));
     }
 
     @Test
-    public void testGenerate_ValidDoWhileLoop() throws Exception {
-        String code = """
-                fun main(){
-                    x int = 0;
-                    do {
-                        x = x + 1;
-                    } while (x < 10);
-                }
-                """;
+    public void testFunctionCall() throws Exception {
+        String output = compileAndRunLangProgram("functionCall.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "goto");
+        assertTrue("Expected 'Result: 3'", output.contains("Result: 3"));
     }
 
     @Test
-    public void testGenerate_ValidRecordUsage() throws Exception {
-        String code = """
-                fun main() {
-                    Point rec {
-                        x int;
-                        y int;
-                    }
-                    Person rec {
-                        name string;
-                        location Point;
-                        history int[];
-                    }
-                    i int = 2;
-                    d Person = Person("me", Point(3, 7), array [i*2] of int);
-                }
-                """;
+    public void testArrayAccess() throws Exception {
+        String output = compileAndRunLangProgram("arrayAccess.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "class Person");
-        expectBytecode(output, "new");
-        expectBytecode(output, "putfield");
+        assertTrue("Expected 'x = 4'", output.contains("x = 4"));
     }
 
     @Test
-    public void testGenerate_ValidFunctionCall() throws Exception {
-        String code = """
-                fun add(a int, b int) int {
-                        return a + b;
-                    }
-                
-                fun main() {
-                    result int = add(1, 2);
-                }
-                """;
+    public void testArrayOfRecord() throws Exception {
+        String output = compileAndRunLangProgram("arrayOfRecord.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "invokestatic");
+        assertTrue("Expected 'p0 = (1,2)'", output.contains("p0 = (1,2)"));
+        assertTrue("Expected 'p1 = (3,4)'", output.contains("p1 = (3,4)"));
     }
 
     @Test
-    public void testGenerate_ValidFunctionCallVoid() throws Exception {
-        String code = """
-                fun printIt(a int) {
-                        writeInt(a);
-                    }
-                
-                fun main() {
-                    printIt(5);
-                }
-                """;
+    public void testFunctionOfRecord() throws Exception {
+        String output = compileAndRunLangProgram("funcOfRecord.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "invokestatic");
+        assertTrue("Expected 'p = (10.0,20.0)'", output.contains("p = (10.0,20.0)"));
     }
 
     @Test
-    public void testGenerate_ValidArrayAccess() throws Exception {
-        String code = """
-                fun main() {
-                    a int[] = array [5] of int;
-                    a[2] = 2;
-                    x int = a[2];
-                }
-                """;
+    public void testFunctionOfRecordReturn() throws Exception {
+        String output = compileAndRunLangProgram("funcOfRecordReturn.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "iaload");
+        assertTrue("Expected 'p = (1.0,2.0)'", output.contains("p = (1.0,2.0)"));
     }
 
     @Test
-    public void testGenerate_WriteInt() throws Exception {
-        String code = """
-                fun main() {
-                    writeInt(1);
-                }
-                """;
+    public void testFunctionOfArray() throws Exception {
+        String output = compileAndRunLangProgram("funcOfArray.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "i");
-        expectBytecode(output, "ldc");
-        expectBytecode(output, "writeInt");
+        assertTrue("Expected '2,4,6'", output.contains("2,4,6"));
     }
 
     @Test
-    public void testGenerate_WriteFloat() throws Exception {
-        String code = """
-                fun main() {
-                    writeFloat(2.5);
-                }
-                """;
+    public void testFunctionOfArrayOfString() throws Exception {
+        String output = compileAndRunLangProgram("funcOfArrayOfString.lang");
 
-        generate(code);
-        String output = disassemble();
+        System.out.println("Program Output:\n" + output);
 
-        expectBytecode(output, "2.5");
-        expectBytecode(output, "ldc");
-        expectBytecode(output, "writeFloat");
+        assertTrue("Expected 'John'", output.contains("John"));
+        assertTrue("Expected 'Jake'", output.contains("Jake"));
+        assertTrue("Expected 'James'", output.contains("James"));
+        assertTrue("Expected 'Jimmy'", output.contains("Jimmy"));
+        assertTrue("Expected 'Jack'", output.contains("Jack"));
     }
 
     @Test
-    public void testGenerate_WriteString() throws Exception {
-        String code = """
-                fun main() {
-                    write("Hello!");
-                }
-                """;
+    public void testReadInt() throws Exception {
+        String simulatedInput = "42\n";
+        compileLangFile("readInt.lang");
 
-        generate(code);
-        String output = disassemble();
+        ProcessBuilder pb = new ProcessBuilder("java", "test");
+        pb.directory(new File("."));
+        pb.redirectErrorStream(true);
 
-        expectBytecode(output, "Hello");
-        expectBytecode(output, "ldc");
-        expectBytecode(output, "write");
+        Process process = pb.start();
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+        ) {
+            writer.write(simulatedInput);
+            writer.flush();
+
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            assertEquals(0, exitCode);
+            String result = output.toString();
+
+            System.out.println("Program Output:\n" + result);
+            assertTrue(result.contains("You entered: 42"));
+        }
     }
 
     @Test
-    public void testGenerate_ReadInt() throws Exception {
-        String code = """
-                fun main() {
-                    i int = readInt();
-                }
-                """;
+    public void testReadFloat() throws Exception {
+        String simulatedInput = "3.14\n";
+        compileLangFile("readFloat.lang");
 
-        generate(code);
-        String output = disassemble();
+        ProcessBuilder pb = new ProcessBuilder("java", "test");
+        pb.directory(new File("."));
+        pb.redirectErrorStream(true);
 
-        expectBytecode(output, "invokestatic");
-        expectBytecode(output, "istore");
-        expectBytecode(output, "readInt");
+        Process process = pb.start();
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+        ) {
+            writer.write(simulatedInput);
+            writer.flush();
+
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            assertEquals(0, exitCode);
+            String result = output.toString();
+
+            System.out.println("Program Output:\n" + result);
+            assertTrue(result.contains("You entered: 3.14"));
+        }
     }
 
     @Test
-    public void testGenerate_ReadFloat() throws Exception {
-        String code = """
-                fun main() {
-                    i float = readFloat();
-                }
-                """;
+    public void testReadString() throws Exception {
+        String simulatedInput = "LINFO2132 student\n";
+        compileLangFile("readString.lang");
 
-        generate(code);
-        String output = disassemble();
+        ProcessBuilder pb = new ProcessBuilder("java", "test");
+        pb.directory(new File("."));
+        pb.redirectErrorStream(true);
 
-        expectBytecode(output, "invokestatic");
-        expectBytecode(output, "fstore");
-        expectBytecode(output, "readFloat");
+        Process process = pb.start();
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+        ) {
+            writer.write(simulatedInput);
+            writer.flush();
+
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            assertEquals(0, exitCode);
+            String result = output.toString();
+
+            System.out.println("Program Output:\n" + result);
+            assertTrue(result.contains("Hello, LINFO2132 student"));
+        }
     }
 
+
+
     @Test
-    public void testGenerate_ReadString() throws Exception {
-        String code = """
-                fun main() {
-                    name string = readString();
-                }
-                """;
+    public void testFactorialWithInput() throws Exception {
+        String program = "factorial.lang";
+        compileLangFile(program);
 
-        generate(code);
-        String output = disassemble();
+        String simulatedInput = "5\n";
 
-        expectBytecode(output, "invokestatic");
-        expectBytecode(output, "astore");
-        expectBytecode(output, "readString");
+        ProcessBuilder pb = new ProcessBuilder("java", "test");
+        pb.directory(new File(".")); // working dir must contain `test.class`
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+        ) {
+            writer.write(simulatedInput);
+            writer.flush();
+
+            // Read output
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            assertEquals(0, exitCode);
+
+            String result = output.toString();
+            System.out.println("Program Output:\n" + result);
+
+            assertTrue("Should prompt for input", result.contains("Enter a number"));
+            assertTrue("Should compute factorial", result.contains("Factorial is: 120"));
+        }
     }
 }

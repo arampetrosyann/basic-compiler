@@ -1,0 +1,6 @@
+fun main() {
+    write("Enter an integer: ");
+    i int = readInt();
+    write("You entered: ");
+    writeInt(i);
+}

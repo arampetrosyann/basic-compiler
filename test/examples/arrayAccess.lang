@@ -1,0 +1,13 @@
+fun main() {
+    a int[] = array [5] of int;
+
+    i int;
+    for(i, 0, 5, 1) {
+        a[i] = i * 2;
+    }
+
+    x int = a[2];
+
+    write("x = ");
+    writeInt(x);
+}

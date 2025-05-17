@@ -1,0 +1,19 @@
+fun getNames() string[] {
+    names string[] = array [5] of string;
+    names[0] = "John";
+    names[1] = "Jake";
+    names[2] = "James";
+    names[3] = "Jimmy";
+    names[4] = "Jack";
+    
+    return names;
+}
+
+fun main() {
+    names string[] = getNames();
+
+    i int;
+    for(i,0,5,1) {
+        writeln(names[i]);
+    }
+}
