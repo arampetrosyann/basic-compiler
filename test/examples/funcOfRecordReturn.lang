@@ -1,0 +1,19 @@
+Point rec {
+    x float;
+    y float;
+}
+
+fun getPoint(x float, y float) Point {
+    p Point = Point(x, y);
+    return p;
+}
+
+fun main() {
+    p Point = getPoint(1.0, 2.0);
+
+    write("p = (");
+    writeFloat(p.x);
+    write(",");
+    writeFloat(p.y);
+    write(")");
+}

@@ -25,6 +25,12 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     implementation("junit:junit:4.13.2")
 
+    // ASM
+    implementation("org.ow2.asm:asm:9.8")
+    implementation("org.ow2.asm:asm-tree:9.8")
+    implementation("org.ow2.asm:asm-util:9.8")
+    implementation("org.ow2.asm:asm-commons:9.8")
+
     // This dependency is used by the application.
     implementation("com.google.guava:guava:31.1-jre")
 }

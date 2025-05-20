@@ -1,0 +1,12 @@
+fun main() {
+    a bool = true;
+    b int = 0;
+    if (!(a)) {
+        b = 10;
+    } else {
+        b = 5;
+    }
+
+    write("b = ");
+    writeInt(b);
+}

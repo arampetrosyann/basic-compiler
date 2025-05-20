@@ -161,7 +161,8 @@ public class ASTPrinter {
             case ArrayAccess access -> {
                 printIndented("ArrayAccess");
                 indent(() -> {
-                    printIndented("Identifier, " + access.getArrayName());
+                    printIndented("Array");
+                    indent(() -> printExpression(access.getArrayExpr()));
                     printIndented("Index");
                     indent(() -> printExpression(access.getIndex()));
                 });

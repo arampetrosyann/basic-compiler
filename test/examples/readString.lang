@@ -1,0 +1,6 @@
+fun main() {
+    write("Enter your name: ");
+    name string = readString();
+    write("Hello, ");
+    write(name);
+}

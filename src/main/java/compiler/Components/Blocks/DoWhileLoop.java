@@ -1,6 +1,7 @@
 package compiler.Components.Blocks;
 
-import compiler.Analyzer.Analyzer;
+import compiler.Analyzer;
+import compiler.Generator;
 
 public class DoWhileLoop extends ASTNodeImpl implements Statement {
     private final Expression condition;
@@ -23,5 +24,10 @@ public class DoWhileLoop extends ASTNodeImpl implements Statement {
     @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
+    }
+
+    @Override
+    public void accept(Generator generator) {
+        generator.generateBlock(this);
     }
 }

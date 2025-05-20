@@ -1,8 +1,8 @@
-import compiler.Analyzer.Analyzer;
-import compiler.Components.Blocks.ASTNodeImpl;
+import compiler.Analyzer;
+import compiler.Components.Blocks.Block;
 import compiler.Exceptions.Semantic.*;
-import compiler.Lexer.Lexer;
-import compiler.Parser.Parser;
+import compiler.Lexer;
+import compiler.Parser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class TestAnalyzer {
         StringReader reader = new StringReader(input);
         Lexer lexer = new Lexer(reader);
         Parser parser = new Parser(lexer);
-        ASTNodeImpl ast = parser.getAST();
+        Block ast = parser.getAST();
         Analyzer analyzer = Analyzer.getInstance();
         analyzer.analyze(ast);
     }

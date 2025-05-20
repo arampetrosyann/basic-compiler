@@ -1,0 +1,13 @@
+fun add(a int, b int) int {
+    return a + b;
+}
+
+fun print(result int) {
+    write("Result: ");
+    writeInt(result);
+}
+
+fun main() {
+   result int = add(1, 2);
+   print(result);
+}

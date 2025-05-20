@@ -1,0 +1,31 @@
+Point rec {
+    x int;
+    y int;
+}
+
+Person rec {
+    name string;
+    location Point;
+    history int[];
+}
+
+fun main() {
+    i int = 2;
+    d Person = Person("me", Point(3, 7), array [i*2] of int);
+    d.history[0] = 1;
+
+    write("name: ");
+    write(d.name);
+    writeln("");
+
+    write("history[0] = ");
+    writeInt(d.history[0]);
+    writeln("");
+
+    write("location (x,y): (");
+    writeInt(d.location.x);
+    write(",");
+    writeInt(d.location.y);
+    write(")");
+    writeln("");
+}

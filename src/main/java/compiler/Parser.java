@@ -1,16 +1,15 @@
-package compiler.Parser;
+package compiler;
 
 import compiler.Exceptions.ParserException;
-import compiler.Lexer.Lexer;
 import compiler.Components.Symbol;
 import compiler.Components.Token;
 import compiler.Components.Blocks.*;
+import compiler.Exceptions.Semantic.TypeError;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
-public class  Parser {
+public class Parser {
     private final Lexer lexer;
     private Symbol lookahead;
 
@@ -20,7 +19,7 @@ public class  Parser {
     }
 
     private Symbol match(Token expectedToken) throws ParserException {
-        if(lookahead.getToken() != expectedToken) {
+        if (lookahead.getToken() != expectedToken) {
             throw new ParserException("Expected " + expectedToken + " but found " + lookahead.getToken(), lookahead.getLineNumber());
         } else {
             Symbol matchingSymbol = lookahead;
@@ -47,24 +46,30 @@ public class  Parser {
             String typeName = lookahead.getValue();
             if (typeName.equals("int") || typeName.equals("float") ||
                     typeName.equals("bool") || typeName.equals("string")) {
-                match(Token.KEYWORD);
+                Symbol key = match(Token.KEYWORD);
                 baseType = new Type(typeName, TypeCategory.PRIMITIVE);
+                baseType.setLineNumber(key.getLineNumber());
             } else {
-                throw new ParserException("Invalid type: " + typeName, lookahead.getLineNumber());
+                throw new TypeError("Invalid type: " + typeName, lookahead.getLineNumber());
             }
         } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // Handle user-defined types (record)
             Symbol identifier = match(Token.IDENTIFIER);
             baseType = new Type(identifier.getValue(), TypeCategory.RECORD);
+            baseType.setLineNumber(identifier.getLineNumber());
         } else {
-            throw new ParserException("Invalid type: " + lookahead.getValue(), lookahead.getLineNumber());
+            throw new TypeError("Invalid type: " + lookahead.getValue(), lookahead.getLineNumber());
         }
 
         // Check if it's an array type
         if (lookahead.getToken() == Token.OPEN_SQUARE_BRACKET) {
             match(Token.OPEN_SQUARE_BRACKET);
             match(Token.CLOSE_SQUARE_BRACKET);
-            return new Type(baseType.getIdentifier() + "[]", TypeCategory.ARRAY);
+
+            Type type = new Type(baseType.getIdentifier() + "[]", TypeCategory.ARRAY);
+            type.setLineNumber(baseType.getLineNumber());
+
+            return type;
         }
 
         return baseType;
@@ -73,15 +78,19 @@ public class  Parser {
     private Param parseParam() throws ParserException {
         Symbol identifier = match(Token.IDENTIFIER);
         Type type = parseType();
-        return new Param(type, identifier.getValue());
+
+        Param param = new Param(type, identifier.getValue());
+        param.setLineNumber(identifier.getLineNumber());
+
+        return param;
     }
 
     private ArrayList<Param> parseParams() throws ParserException {
         ArrayList<Param> parameters = new ArrayList<>();
 
-        if(lookahead.getToken() != Token.CLOSE_PARENTHESIS) {
+        if (lookahead.getToken() != Token.CLOSE_PARENTHESIS) {
             parameters.add(parseParam());
-            while(lookahead.getToken() == Token.COMMA) {
+            while (lookahead.getToken() == Token.COMMA) {
                 match(Token.COMMA);
                 parameters.add(parseParam());
             }
@@ -110,10 +119,9 @@ public class  Parser {
             type = parseType();
         } else if (lookahead.getToken() == Token.IDENTIFIER) {
             // User-defined record type
-            Symbol recordName = match(Token.IDENTIFIER);
-            type = new Type(recordName.getValue(), TypeCategory.RECORD);
+            type = parseType();
         } else {
-            throw new ParserException("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken(), lookahead.getLineNumber());
+            throw new TypeError("Expected a type for variable '" + name.getValue() + "' but found: " + lookahead.getToken(), lookahead.getLineNumber());
         }
 
         Expression value = null;
@@ -124,7 +132,10 @@ public class  Parser {
         }
         match(Token.SEMI_COLON);
 
-        return new VariableDeclaration(name.getValue(), type, value, isFinal);
+        VariableDeclaration variableDeclaration = new VariableDeclaration(name.getValue(), type, value, isFinal);
+        variableDeclaration.setLineNumber(name.getLineNumber());
+
+        return variableDeclaration;
     }
 
     private Statement parseStatement() throws ParserException {
@@ -133,10 +144,14 @@ public class  Parser {
 
             // Handle Assignment
             if (lookahead.getToken() == Token.ASSIGN) {
-                match(Token.ASSIGN);
+                Symbol assign = match(Token.ASSIGN);
                 Expression value = parseExpression();
                 match(Token.SEMI_COLON);
-                return new Assignment(new VarReference(identifier.getValue()), value);
+
+                Assignment assignment = new Assignment(new VarReference(identifier.getValue()), value);
+                assignment.setLineNumber(assign.getLineNumber());
+
+                return assignment;
             }
 
             // Handle Function Calls
@@ -194,25 +209,32 @@ public class  Parser {
 
     private Statement parseAssignmentOrFunctionCall(Symbol identifier) throws ParserException {
         Expression leftHandSide = new VarReference(identifier.getValue());
+        leftHandSide.setLineNumber(identifier.getLineNumber());
 
         while (lookahead.getToken() == Token.OPEN_SQUARE_BRACKET || lookahead.getToken() == Token.DOT) {
             if (lookahead.getToken() == Token.OPEN_SQUARE_BRACKET) {
                 match(Token.OPEN_SQUARE_BRACKET);
                 Expression index = parseExpression();
                 match(Token.CLOSE_SQUARE_BRACKET);
-                leftHandSide = new ArrayAccess(identifier.getValue(), index);
+                leftHandSide = new ArrayAccess(leftHandSide, index);
+                leftHandSide.setLineNumber(identifier.getLineNumber());
             } else if (lookahead.getToken() == Token.DOT) {
                 match(Token.DOT);
                 Symbol field = match(Token.IDENTIFIER);
                 leftHandSide = new RecordFieldAccess(leftHandSide, field.getValue());
+                leftHandSide.setLineNumber(field.getLineNumber());
             }
         }
 
         if (lookahead.getToken() == Token.ASSIGN) {
-            match(Token.ASSIGN);
+            Symbol assign = match(Token.ASSIGN);
             Expression value = parseExpression();
             match(Token.SEMI_COLON);
-            return new Assignment(leftHandSide, value);
+
+            Assignment assignment = new Assignment(leftHandSide, value);
+            assignment.setLineNumber(assign.getLineNumber());
+
+            return assignment;
         } else if (lookahead.getToken() == Token.OPEN_PARENTHESIS) {
             match(Token.OPEN_PARENTHESIS);
             ArrayList<Expression> arguments = new ArrayList<>();
@@ -227,7 +249,11 @@ public class  Parser {
 
             match(Token.CLOSE_PARENTHESIS);
             match(Token.SEMI_COLON);
-            return new FunctionCall(identifier.getValue(), arguments);
+
+            FunctionCall functionCall = new FunctionCall(identifier.getValue(), arguments);
+            functionCall.setLineNumber(identifier.getLineNumber());
+
+            return functionCall;
         } else {
             throw new ParserException("Invalid statement: " + identifier.getValue(), identifier.getLineNumber());
         }
@@ -252,32 +278,39 @@ public class  Parser {
     }
 
     private Statement parseWhileLoop() throws ParserException {
-        matchKeyword("while");
+        Symbol whileKeyword = matchKeyword("while");
         match(Token.OPEN_PARENTHESIS);
 
         Expression condition = parseLogicalOr();
 
         match(Token.CLOSE_PARENTHESIS);
         Block body = parseBlock();
-        return new WhileLoop(condition, body);
+
+        WhileLoop whileLoop = new WhileLoop(condition, body);
+        whileLoop.setLineNumber(whileKeyword.getLineNumber());
+
+        return whileLoop;
     }
 
     private Statement parseDoWhileLoop() throws ParserException {
         matchKeyword("do");
         Block body = parseBlock();
 
-        matchKeyword("while");
+        Symbol whileKeyword = matchKeyword("while");
         match(Token.OPEN_PARENTHESIS);
         Expression condition = parseLogicalOr();
         match(Token.CLOSE_PARENTHESIS);
         match(Token.SEMI_COLON);
 
-        return new DoWhileLoop(condition, body);
+        DoWhileLoop doWhileLoop = new DoWhileLoop(condition, body);
+        doWhileLoop.setLineNumber(whileKeyword.getLineNumber());
+
+        return doWhileLoop;
     }
 
 
     private Statement parseForLoop() throws ParserException {
-        matchKeyword("for");
+        Symbol forKeyword = matchKeyword("for");
         match(Token.OPEN_PARENTHESIS);
 
         Symbol variable = match(Token.IDENTIFIER);
@@ -294,11 +327,14 @@ public class  Parser {
 
         Block body = parseBlock();
 
-        return new ForLoop(variable.getValue(), start, maxValue, step, body);
+        ForLoop forLoop = new ForLoop(variable.getValue(), start, maxValue, step, body);
+        forLoop.setLineNumber(forKeyword.getLineNumber());
+
+        return forLoop;
     }
 
     private Statement parseIfStatement() throws ParserException {
-        matchKeyword("if");
+        Symbol ifKeyword = matchKeyword("if");
         match(Token.OPEN_PARENTHESIS);
 
         Expression condition = parseLogicalOr();
@@ -313,11 +349,14 @@ public class  Parser {
             elseBlock = parseBlock();
         }
 
-        return new IfStatement(condition, thenBlock, elseBlock);
+        IfStatement ifStatement = new IfStatement(condition, thenBlock, elseBlock);
+        ifStatement.setLineNumber(ifKeyword.getLineNumber());
+
+        return ifStatement;
     }
 
     private Statement parseReturnStatement() throws ParserException {
-        matchKeyword("return");
+        Symbol returnKeyword = matchKeyword("return");
 
         Expression returnValue = null;
         if (lookahead.getToken() != Token.SEMI_COLON) {
@@ -326,15 +365,21 @@ public class  Parser {
 
         match(Token.SEMI_COLON);
 
-        return new ReturnStatement(returnValue);
+        ReturnStatement returnStatement = new ReturnStatement(returnValue);
+        returnStatement.setLineNumber(returnKeyword.getLineNumber());
+
+        return returnStatement;
     }
 
     private Statement parseFreeStatement() throws ParserException {
-        matchKeyword("free");
+        Symbol free = matchKeyword("free");
         Symbol identifier = match(Token.IDENTIFIER);  // Match the variable to deallocate
         match(Token.SEMI_COLON);
 
-        return new FreeStatement(identifier.getValue());
+        FreeStatement freeStatement = new FreeStatement(identifier.getValue());
+        freeStatement.setLineNumber(free.getLineNumber());
+
+        return freeStatement;
     }
 
     private Expression parseExpression() throws ParserException {
@@ -346,9 +391,10 @@ public class  Parser {
 
         while (lookahead.getToken() == Token.LOGICAL_OR) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseLogicalAnd();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -359,9 +405,10 @@ public class  Parser {
 
         while (lookahead.getToken() == Token.LOGICAL_AND) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseEquality();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -372,9 +419,10 @@ public class  Parser {
 
         while (lookahead.getToken() == Token.EQUAL || lookahead.getToken() == Token.NOT_EQUAL) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseComparison();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -386,9 +434,10 @@ public class  Parser {
         while (lookahead.getToken() == Token.LESS || lookahead.getToken() == Token.GREATER ||
                 lookahead.getToken() == Token.LESS_OR_EQUAL || lookahead.getToken() == Token.GREATER_OR_EQUAL) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseTerm();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -399,9 +448,10 @@ public class  Parser {
 
         while (lookahead.getToken() == Token.ADD || lookahead.getToken() == Token.SUBTRACT) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseFactor();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -412,9 +462,10 @@ public class  Parser {
 
         while (lookahead.getToken() == Token.MULTIPLY || lookahead.getToken() == Token.DIVIDE || lookahead.getToken() == Token.MODULO) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression right = parseUnary();
             left = new BinaryExpression(left, operator, right);
+            left.setLineNumber(op.getLineNumber());
         }
 
         return left;
@@ -423,9 +474,13 @@ public class  Parser {
     private Expression parseUnary() throws ParserException {
         if (lookahead.getToken() == Token.SUBTRACT) {
             Token operator = lookahead.getToken();
-            match(operator);
+            Symbol op = match(operator);
             Expression operand = parseUnary();
-            return new UnaryExpression(operator, operand);
+
+            UnaryExpression unaryExpression = new UnaryExpression(operator, operand);
+            unaryExpression.setLineNumber(op.getLineNumber());
+
+            return unaryExpression;
         }
 
         return parsePrimary();
@@ -437,12 +492,16 @@ public class  Parser {
             case Token.FLOAT_NUMBER:
             case Token.BOOLEAN:
             case Token.STRING:
-                return new Literal(match(lookahead.getToken()));
+                Symbol val = match(lookahead.getToken());
+                Literal literal = new Literal(val);
+                literal.setLineNumber(val.getLineNumber());
+                return literal;
 
             case Token.IDENTIFIER:
                 Symbol identifier = match(Token.IDENTIFIER);
 
                 Expression expr = new VarReference(identifier.getValue());
+                expr.setLineNumber(identifier.getLineNumber());
 
                 if (lookahead.getToken() == Token.OPEN_PARENTHESIS) {
                     return parseAssignedCallExpression(identifier);
@@ -454,11 +513,13 @@ public class  Parser {
                         match(Token.OPEN_SQUARE_BRACKET);
                         Expression index = parseExpression();
                         match(Token.CLOSE_SQUARE_BRACKET);
-                        expr = new ArrayAccess(identifier.getValue(), index);  // Now expr is an array element reference
+                        expr = new ArrayAccess(expr, index);  // Now expr is an array element reference
+                        expr.setLineNumber(identifier.getLineNumber());
                     } else if (lookahead.getToken() == Token.DOT) {
                         match(Token.DOT);
                         Symbol field = match(Token.IDENTIFIER);
                         expr = new RecordFieldAccess(expr, field.getValue());  // Allow access to record fields
+                        expr.setLineNumber(field.getLineNumber());
                     }
                 }
 
@@ -482,18 +543,21 @@ public class  Parser {
     }
 
     private Expression parseArrayCreation() throws ParserException {
-        matchKeyword("array");
+        Symbol array = matchKeyword("array");
         match(Token.OPEN_SQUARE_BRACKET);
         Expression size = parseExpression();
         match(Token.CLOSE_SQUARE_BRACKET);
         matchKeyword("of");
         Type elementType = parseType();
 
-        return new ArrayCreation(size, elementType);
+        ArrayCreation arrayCreation = new ArrayCreation(size, elementType);
+        arrayCreation.setLineNumber(array.getLineNumber());
+
+        return arrayCreation;
     }
 
     private Expression parseAssignedCallExpression(Symbol recordType) throws ParserException {
-        match(Token.OPEN_PARENTHESIS);
+        Symbol parenthesis = match(Token.OPEN_PARENTHESIS);
         List<Expression> arguments = new ArrayList<>();
 
         // Checks if it is a function call or a record creation
@@ -506,11 +570,15 @@ public class  Parser {
         }
 
         match(Token.CLOSE_PARENTHESIS);
-        return new CallExpression(recordType.getValue(), arguments);
+
+        CallExpression callExpression = new CallExpression(recordType.getValue(), arguments);
+        callExpression.setLineNumber(parenthesis.getLineNumber());
+
+        return callExpression;
     }
 
     private Statement parseRecordDefinition(String name) throws ParserException {
-        matchKeyword("rec");
+        Symbol keyword = matchKeyword("rec");
         match(Token.OPEN_CURLY_BRACE);
 
         List<RecordField> fields = new ArrayList<>();
@@ -525,7 +593,10 @@ public class  Parser {
 
         match(Token.CLOSE_CURLY_BRACE);
 
-        return new RecordDefinition(name, fields);
+        RecordDefinition recordDefinition = new RecordDefinition(name, fields);
+        recordDefinition.setLineNumber(keyword.getLineNumber());
+
+        return recordDefinition;
     }
 
     private Method parseMethod() throws ParserException {
@@ -543,7 +614,11 @@ public class  Parser {
         }
 
         Block body = parseBlock();
-        return new Method(functionName.getValue(), returnType, params, body);
+
+        Method method = new Method(functionName.getValue(), returnType, params, body);
+        method.setLineNumber(functionName.getLineNumber());
+
+        return method;
     }
 
     public Block getAST() throws ParserException {

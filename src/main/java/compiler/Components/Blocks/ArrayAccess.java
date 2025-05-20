@@ -1,14 +1,15 @@
 package compiler.Components.Blocks;
 
-import compiler.Analyzer.Analyzer;
+import compiler.Analyzer;
+import compiler.Generator;
 
 public class ArrayAccess extends ASTNodeImpl implements Expression {
-    private final String arrayName;
+    private final Expression arrayExpr;
     private final Expression index;
 
-    public ArrayAccess(String arrayName, Expression index) {
+    public ArrayAccess(Expression arrayExpr, Expression index) {
         super("ArrayAccess", null);
-        this.arrayName = arrayName;
+        this.arrayExpr = arrayExpr;
         this.index = index;
     }
 
@@ -16,12 +17,15 @@ public class ArrayAccess extends ASTNodeImpl implements Expression {
         return index;
     }
 
-    public String getArrayName() {
-        return arrayName;
-    }
+    public Expression getArrayExpr() { return arrayExpr; }
 
     @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
+    }
+
+    @Override
+    public void accept(Generator generator) {
+        generator.generateBlock(this);
     }
 }

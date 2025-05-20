@@ -1,6 +1,7 @@
 package compiler.Components.Blocks;
 
-import compiler.Analyzer.Analyzer;
+import compiler.Analyzer;
+import compiler.Generator;
 
 import java.util.List;
 
@@ -25,5 +26,10 @@ public class CallExpression extends ASTNodeImpl implements Expression {
     @Override
     public void accept(Analyzer analyzer) {
         analyzer.check(this);
+    }
+
+    @Override
+    public void accept(Generator generator) {
+        generator.generateBlock(this);
     }
 }

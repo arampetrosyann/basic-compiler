@@ -1,0 +1,26 @@
+fun doubleAll(arr int[]) int[] {
+    result int[] = array [3] of int;
+    i int;
+    for (i,0,3,1) {
+        result[i] = arr[i] * 2;
+    }
+    return result;
+}
+
+fun main() {
+    a int[] = array [3] of int;
+
+    i int;
+    for(i,0,3,1) {
+        a[i] = i + 1;
+    }
+
+    doubled int[] = doubleAll(a);
+
+    writeInt(doubled[0]);
+    write(",");
+    writeInt(doubled[1]);
+    write(",");
+    writeInt(doubled[2]);
+    writeln("");
+}

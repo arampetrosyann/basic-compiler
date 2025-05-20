@@ -1,16 +1,16 @@
 package compiler.Exceptions;
 
-public class LexerException extends RuntimeException {
-  public LexerException(String message) {
+public class GeneratorException extends RuntimeException {
+  public GeneratorException(String message) {
     super(formatMessage(message, null));
   }
 
-  public LexerException(String message, int lineNumber) {
+  public GeneratorException(String message, int lineNumber) {
     super(formatMessage(message, lineNumber));
   }
 
   private static String formatMessage(String message, Integer lineNumber) {
-    String processedMessage = message.contains("LexerError: ") ? message : "Lexer Error: " + message;
+    String processedMessage = message.contains("GeneratorError: ") ? message : "GeneratorError: " + message;
 
     return lineNumber == null ? processedMessage : processedMessage + " | line number: " + lineNumber;
   }

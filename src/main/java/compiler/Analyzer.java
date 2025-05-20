@@ -1,5 +1,6 @@
-package compiler.Analyzer;
+package compiler;
 
+import compiler.Components.SymbolTableManager;
 import compiler.Components.Token;
 import compiler.Components.Blocks.*;
 import compiler.Components.Semantic.*;
@@ -13,8 +14,7 @@ import java.util.ArrayList;
 
 public class Analyzer {
     private static Analyzer instance;
-    private SymbolTable globalTable;
-    private SymbolTable currentScope;
+    private static SymbolTableManager symbolTableManager;
     // for checking the return type
     private FunctionType currentFunctionType;
 
@@ -28,27 +28,28 @@ public class Analyzer {
     }
 
     public void reset() {
-        globalTable = new SymbolTable(SymbolTableType.GLOBAL, null);
+        symbolTableManager = SymbolTableManager.getInstance();
+        symbolTableManager.reset();
+
         setupBuiltins();
-        currentScope = globalTable;
     }
 
     private void setupBuiltins() {
-        globalTable.insert("!", new FunctionType(PrimitiveType.BOOL, List.of(PrimitiveType.BOOL)));
-        globalTable.insert("chr", new FunctionType(PrimitiveType.STRING, List.of(PrimitiveType.INT)));
-        globalTable.insert("floor", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.FLOAT)));
-        globalTable.insert("len", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.STRING)));
-        globalTable.insert("readInt", new FunctionType(PrimitiveType.INT, List.of()));
-        globalTable.insert("readFloat", new FunctionType(PrimitiveType.FLOAT, List.of()));
-        globalTable.insert("readString", new FunctionType(PrimitiveType.STRING, List.of()));
-        globalTable.insert("writeInt", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.INT)));
-        globalTable.insert("writeFloat", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.FLOAT)));
-        globalTable.insert("write", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
-        globalTable.insert("writeln", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("!", new FunctionType(PrimitiveType.BOOL, List.of(PrimitiveType.BOOL)));
+        symbolTableManager.getGlobalTable().insert("chr", new FunctionType(PrimitiveType.STRING, List.of(PrimitiveType.INT)));
+        symbolTableManager.getGlobalTable().insert("floor", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.FLOAT)));
+        symbolTableManager.getGlobalTable().insert("len", new FunctionType(PrimitiveType.INT, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("readInt", new FunctionType(PrimitiveType.INT, List.of()));
+        symbolTableManager.getGlobalTable().insert("readFloat", new FunctionType(PrimitiveType.FLOAT, List.of()));
+        symbolTableManager.getGlobalTable().insert("readString", new FunctionType(PrimitiveType.STRING, List.of()));
+        symbolTableManager.getGlobalTable().insert("writeInt", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.INT)));
+        symbolTableManager.getGlobalTable().insert("writeFloat", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.FLOAT)));
+        symbolTableManager.getGlobalTable().insert("write", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
+        symbolTableManager.getGlobalTable().insert("writeln", new FunctionType(ReturnType.VOID, List.of(PrimitiveType.STRING)));
     }
 
-    public void analyze(ASTNodeImpl node) {
-        node.accept(this);
+    public void analyze(Block n) {
+        n.accept(this);
     }
 
     public void check(ASTNodeImpl node) {}
@@ -60,16 +61,16 @@ public class Analyzer {
             case PRIMITIVE:
                 return mapToPrimitiveType(id);
             case RECORD:
-                VarType found = globalTable.lookup(id);
+                VarType found = symbolTableManager.getGlobalTable().lookup(id);
                 if (!(found instanceof RecordType)) {
-                    throw new TypeError("Unknown record type " + id);
+                    throw new TypeError("Unknown record type " + id, type.getLineNumber());
                 }
                 return found;
             case ARRAY:
                 Type element = type.getArrayElementType();
                 return new ArrayType(mapToVarType(element), -1);
             default:
-                throw new TypeError("Unsupported type for " + id);
+                throw new TypeError("Unsupported type for " + id, type.getLineNumber());
         }
     }
 
@@ -81,6 +82,10 @@ public class Analyzer {
             case "string" -> PrimitiveType.STRING;
             default -> throw new TypeError("Illegal type " + id);
         };
+    }
+
+    public VarType getType(Expression expr) {
+        return check(expr);
     }
 
     private VarType check(Expression expr) {
@@ -95,17 +100,7 @@ public class Analyzer {
         if (expr instanceof UnaryExpression unary) return check(unary);
         if (expr instanceof ReturnStatement ret) return check(ret);
 
-        throw new TypeError("Unknown expression type " + expr.getClass().getSimpleName());
-    }
-
-    private VarType lookup(String identifier) {
-        SymbolTable scope = currentScope;
-        while (scope != null) {
-            VarType type = scope.lookup(identifier);
-            if (type != null) return type;
-            scope = scope.getParent();
-        }
-        throw new ScopeError("Variable " + identifier + " is not defined");
+        throw new TypeError("Unknown expression type " + expr.getClass().getSimpleName(), expr.getLineNumber());
     }
 
     public void check(Assignment elem) {
@@ -113,27 +108,28 @@ public class Analyzer {
         VarType lhsType;
 
         if (target instanceof VarReference ref) {
-            lhsType = lookup(ref.getName());
+            lhsType = symbolTableManager.lookup(ref.getName());
         } else if (target instanceof ArrayAccess access) {
-            VarType arrayType = lookup(access.getArrayName());
+            VarType arrayType = check(access.getArrayExpr());
+
             if (!(arrayType instanceof ArrayType arr)) {
-                throw new TypeError("Trying to index a non-array value");
+                throw new TypeError("Trying to index a non-array value", access.getLineNumber());
             }
 
             VarType indexType = check(access.getIndex());
             if (indexType == null || !indexType.equals(PrimitiveType.INT)) {
-                throw new TypeError("Array index must be of type int");
+                throw new TypeError("Array index must be of type int", access.getLineNumber());
             }
 
             lhsType = arr.getElementType();
         } else {
-            throw new TypeError("Invalid assignment target");
+            throw new TypeError("Invalid assignment target", elem.getLineNumber());
         }
 
         VarType rhsType = check(elem.getValue());
 
         if (!lhsType.equals(rhsType)) {
-            throw new TypeError("Mismatched types in assignment");
+            throw new TypeError("Mismatched types in assignment", elem.getLineNumber());
         }
     }
 
@@ -142,13 +138,14 @@ public class Analyzer {
         VarType rightType = check(elem.getRight());
 
         if (!leftType.equals(rightType)) {
-            throw new OperatorError("Mismatched operand types for operator " + elem.getOperator());
+            throw new OperatorError("Mismatched operand types for operator " + elem.getOperator(), elem.getLineNumber());
         }
 
         return switch (elem.getOperator()) {
             case LESS, GREATER, LESS_OR_EQUAL, GREATER_OR_EQUAL, EQUAL, NOT_EQUAL -> PrimitiveType.BOOL;
             case ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO -> leftType;
-            default -> throw new OperatorError("Unknown operator " + elem.getOperator());
+            case LOGICAL_OR -> rightType;
+            default -> throw new OperatorError("Unknown operator " + elem.getOperator(), elem.getLineNumber());
         };
     }
 
@@ -161,7 +158,7 @@ public class Analyzer {
         VarType sizeType = check(elem.getSize());
 
         if (!sizeType.equals(PrimitiveType.INT)) {
-            throw new TypeError("Array size must be an integer");
+            throw new TypeError("Array size must be an integer", elem.getLineNumber());
         }
 
         int size = -1;
@@ -173,33 +170,33 @@ public class Analyzer {
     }
 
     public VarType check(ArrayAccess elem) {
-        VarType arrayType = lookup(elem.getArrayName());
+        VarType arrayType = check(elem.getArrayExpr());
 
         if (!(arrayType instanceof ArrayType typedArray)) {
-            throw new TypeError("Trying to index a non-array value");
+            throw new TypeError("Trying to index a non-array value", elem.getLineNumber());
         }
 
         VarType indexType = check(elem.getIndex());
         if (!indexType.equals(PrimitiveType.INT)) {
-            throw new TypeError("Array index must be of type int");
+            throw new TypeError("Array index must be of type int", elem.getLineNumber());
         }
 
         return typedArray.getElementType();
     }
 
     public VarType check(FunctionCall elem) {
-        FunctionType functionType = (FunctionType) lookup(elem.getFunctionName());
+        FunctionType functionType = (FunctionType) symbolTableManager.lookup(elem.getFunctionName());
         List<VarType> paramTypes = functionType.getParameters();
         String name = elem.getFunctionName();
 
         if (name.equals("writeln")) {
             if (elem.getArguments().size() != 1) {
-                throw new ArgumentError("writeln expects exactly one argument");
+                throw new ArgumentError("writeln expects exactly one argument", elem.getLineNumber());
             }
 
             VarType argType = check(elem.getArguments().getFirst());
             if (!(argType instanceof PrimitiveType)) {
-                throw new ArgumentError("writeln only accepts primitive types");
+                throw new ArgumentError("writeln only accepts primitive types", elem.getLineNumber());
             }
 
             return functionType.getReturnType();
@@ -207,12 +204,12 @@ public class Analyzer {
 
         if (name.equals("write")) {
             if (elem.getArguments().size() != 1) {
-                throw new ArgumentError("write expects exactly one argument");
+                throw new ArgumentError("write expects exactly one argument", elem.getLineNumber());
             }
 
             VarType argType = check(elem.getArguments().getFirst());
             if (!PrimitiveType.STRING.equals(argType)) {
-                throw new ArgumentError("write only accepts string");
+                throw new ArgumentError("write only accepts string", elem.getLineNumber());
             }
 
             return functionType.getReturnType();
@@ -221,7 +218,7 @@ public class Analyzer {
         System.out.println(paramTypes.size() + "   " + elem.getArguments().size());
 
         if (paramTypes.size() != elem.getArguments().size()) {
-            throw new ArgumentError("Incorrect number of arguments for function " + elem.getFunctionName());
+            throw new ArgumentError("Incorrect number of arguments for function " + elem.getFunctionName(), elem.getLineNumber());
         }
 
         for (int i = 0; i < paramTypes.size(); i++) {
@@ -229,7 +226,7 @@ public class Analyzer {
             VarType actualType = check(elem.getArguments().get(i));
 
             if (!expectedType.equals(actualType)) {
-                throw new ArgumentError("Argument type mismatch for function " + elem.getFunctionName());
+                throw new ArgumentError("Argument type mismatch for function " + elem.getFunctionName(), elem.getLineNumber());
             }
         }
 
@@ -240,7 +237,7 @@ public class Analyzer {
         VarType conditionType = check(elem.getCondition());
 
         if (!conditionType.equals(PrimitiveType.BOOL)) {
-            throw new MissingConditionError("Non-boolean condition in if statement");
+            throw new MissingConditionError("Non-boolean condition in if statement", elem.getLineNumber());
         }
 
         elem.getThenBlock().accept(this);
@@ -253,7 +250,7 @@ public class Analyzer {
         VarType functionReturnType = currentFunctionType.getReturnType();
 
         if (!functionReturnType.equals(returnType)) {
-            throw new ReturnError("Return value and return type don't match");
+            throw new ReturnError("Return value and return type don't match", elem.getLineNumber());
         }
 
         return returnType;
@@ -261,21 +258,21 @@ public class Analyzer {
 
     public VarType check(CallExpression elem) {
         String name = elem.getType();
-        VarType lookedUp = lookup(name);
+        VarType lookedUp = symbolTableManager.lookup(name);
 
         if (lookedUp instanceof FunctionType functionType) {
             List<VarType> expectedArgs = functionType.getParameters();
             List<Expression> actualArgs = elem.getArguments();
 
             if (expectedArgs.size() != actualArgs.size()) {
-                throw new ArgumentError("Incorrect number of arguments for function " + name);
+                throw new ArgumentError("Incorrect number of arguments for function " + name, elem.getLineNumber());
             }
 
             for (int i = 0; i < expectedArgs.size(); i++) {
                 VarType expected = expectedArgs.get(i);
                 VarType actual = check(actualArgs.get(i));
                 if (!expected.equals(actual)) {
-                    throw new ArgumentError("Argument " + (i + 1) + " type mismatch.");
+                    throw new ArgumentError("Argument " + (i + 1) + " type mismatch.", elem.getLineNumber());
                 }
             }
 
@@ -285,47 +282,49 @@ public class Analyzer {
             List<Expression> args = elem.getArguments();
 
             if (fields.size() != args.size()) {
-                throw new ArgumentError("Wrong number of arguments for record constructor " + name);
+                throw new ArgumentError("Wrong number of arguments for record constructor " + name, elem.getLineNumber());
             }
 
             int i = 0;
             for (VarType expected : fields.values()) {
                 VarType actual = check(args.get(i));
                 if (!expected.equals(actual)) {
-                    throw new ArgumentError("Field " + (i + 1) + " type mismatch in record constructor " + name);
+                    throw new ArgumentError("Field " + (i + 1) + " type mismatch in record constructor " + name, elem.getLineNumber());
                 }
                 i++;
             }
 
             return recordType;
         } else {
-            throw new TypeError(name + " is not a function or record");
+            throw new TypeError(name + " is not a function or record", elem.getLineNumber());
         }
     }
 
     public VarType check(RecordFieldAccess elem) {
-        VarType recordType = check(elem.getRecord());
+        Expression recordExpr = elem.getRecord();
+        VarType recordType = check(recordExpr); // recursively check inner expression
 
         if (!(recordType instanceof RecordType rec)) {
-            throw new TypeError("Attempting to access field of non-record type");
+            throw new TypeError("Attempting to access field of non-record type", elem.getLineNumber());
         }
 
         String fieldName = elem.getFieldName();
-
         if (!rec.hasField(fieldName)) {
-            throw new TypeError("Record does not contain field '" + fieldName + "'");
+            throw new TypeError("Record does not contain field '" + fieldName + "'", elem.getLineNumber());
         }
+
+        elem.setRecordType(rec);
 
         return rec.getFieldValue(fieldName);
     }
 
     public VarType check(VarReference elem) {
-        return lookup(elem.getName());
+        return symbolTableManager.lookup(elem.getName());
     }
 
     public void check(VariableDeclaration elem) {
-        if (currentScope.contains(elem.getIdentifier())) {
-            throw new ScopeError("Variable '" + elem.getIdentifier() + "' is already defined");
+        if (symbolTableManager.getCurrentScope().contains(elem.getIdentifier())) {
+            throw new ScopeError("Variable '" + elem.getIdentifier() + "' is already defined", elem.getLineNumber());
         }
 
         VarType declaredType;
@@ -338,16 +337,16 @@ public class Analyzer {
             case PRIMITIVE, RECORD -> {
                 declaredType = mapToVarType(elem.getType());
             }
-            default -> throw new TypeError("Unsupported type category for '" + elem.getIdentifier() + "'");
+            default -> throw new TypeError("Unsupported type category for '" + elem.getIdentifier() + "'", elem.getLineNumber());
         }
 
-        currentScope.insert(elem.getIdentifier(), declaredType);
+        symbolTableManager.getCurrentScope().insert(elem.getIdentifier(), declaredType);
 
         if (elem.getValue() != null) {
             VarType valueType = check(elem.getValue());
 
             if (!declaredType.equals(valueType)) {
-                throw new TypeError("Mismatched types in variable declaration for '" + elem.getIdentifier() + "'");
+                throw new TypeError("Mismatched types in variable declaration for '" + elem.getIdentifier() + "'", elem.getLineNumber());
             }
         }
     }
@@ -365,24 +364,28 @@ public class Analyzer {
 
         FunctionType functionType = new FunctionType(returnType, paramTypes);
 
-        globalTable.insert(elem.getName(), functionType);
+        symbolTableManager.getGlobalTable().insert(elem.getName(), functionType);
 
-        currentScope = new SymbolTable(SymbolTableType.SCOPE, currentScope);
+        SymbolTable newSymbolTable = new SymbolTable(SymbolTableType.SCOPE, symbolTableManager.getCurrentScope());
+
+        symbolTableManager.getCurrentScope().add(elem, newSymbolTable);
+        symbolTableManager.enterSymbolTable(elem);
+
         currentFunctionType = functionType;
 
         for (int i = 0; i < elem.getParameters().size(); i++) {
             Param param = elem.getParameters().get(i);
-            currentScope.insert(param.getName(), paramTypes.get(i));
+            symbolTableManager.getCurrentScope().insert(param.getName(), paramTypes.get(i));
         }
 
         elem.getBody().accept(this);
 
         currentFunctionType = null;
-        currentScope = currentScope.getParent();
+        symbolTableManager.leaveSymbolTable();
     }
 
     public void check(FreeStatement elem) {
-        lookup(elem.getVariableName());
+        symbolTableManager.lookup(elem.getVariableName());
     }
 
     public VarType check(UnaryExpression elem) {
@@ -390,7 +393,7 @@ public class Analyzer {
 
         if (elem.getOperator() == Token.SUBTRACT) {
             if (!(operandType.equals(PrimitiveType.INT) || operandType.equals(PrimitiveType.FLOAT))) {
-                throw new TypeError("Operator '-' requires an integer or float operand");
+                throw new TypeError("Operator '-' requires an integer or float operand", elem.getLineNumber());
             }
         }
 
@@ -400,14 +403,14 @@ public class Analyzer {
     public void check(Type elem) {}
 
     public void check(RecordDefinition elem) {
-        if (globalTable.contains(elem.getName())) {
-            throw new RecordError("Record '" + elem.getName() + "' is already defined");
+        if (symbolTableManager.getGlobalTable().contains(elem.getName())) {
+            throw new RecordError("Record '" + elem.getName() + "' is already defined", elem.getLineNumber());
         }
 
-        if (globalTable.lookup(elem.getName()) instanceof RecordType) {
+        if (symbolTableManager.getGlobalTable().lookup(elem.getName()) instanceof RecordType) {
             return;
-        } else if (globalTable.lookup(elem.getName()) != null) {
-            throw new RecordError("Record " + elem.getName() + " already exists");
+        } else if (symbolTableManager.getGlobalTable().lookup(elem.getName()) != null) {
+            throw new RecordError("Record " + elem.getName() + " already exists", elem.getLineNumber());
         }
 
         Map<String, VarType> fields = new HashMap<>();
@@ -415,7 +418,7 @@ public class Analyzer {
             fields.put(field.getName(), mapToVarType(field.getType()));
         }
 
-        globalTable.insert(elem.getName(), new RecordType(fields));
+        symbolTableManager.getGlobalTable().insert(elem.getName(), new RecordType(elem.getName(), fields));
     }
 
     public void check(Param elem) {}
@@ -425,7 +428,7 @@ public class Analyzer {
     public void check(WhileLoop elem) {
         VarType condType = check(elem.getCondition());
         if (!condType.equals(PrimitiveType.BOOL)) {
-            throw new MissingConditionError("Non-boolean condition in while's condition statement");
+            throw new MissingConditionError("Non-boolean condition in while's condition statement", elem.getLineNumber());
         }
 
         elem.getBody().accept(this);
@@ -436,31 +439,33 @@ public class Analyzer {
 
         VarType condType = check(elem.getCondition());
         if (!condType.equals(PrimitiveType.BOOL)) {
-            throw new MissingConditionError("Non-boolean condition in do-while's condition statement");
+            throw new MissingConditionError("Non-boolean condition in do-while's condition statement", elem.getLineNumber());
         }
     }
 
     public void check(ForLoop elem) {
-        VarType loopVarType = lookup(elem.getVariable());
+        VarType loopVarType = symbolTableManager.lookup(elem.getVariable());
 
         VarType startType = check(elem.getStart());
         VarType endType = check(elem.getMaxValue());
         VarType stepType = check(elem.getStep());
 
         if (!(loopVarType.equals(startType) && startType.equals(endType) && Objects.equals(stepType, endType))) {
-            throw new TypeError("For loop control variables and bounds must have same type");
+            throw new TypeError("For loop control variables and bounds must have same type", elem.getLineNumber());
         }
 
         elem.getBody().accept(this);
     }
 
     public void check(Block block) {
-        currentScope = new SymbolTable(SymbolTableType.SCOPE, currentScope);
+        SymbolTable newSymbolTable = new SymbolTable(SymbolTableType.SCOPE, symbolTableManager.getCurrentScope());
+        symbolTableManager.getCurrentScope().add(block, newSymbolTable);
+        symbolTableManager.enterSymbolTable(block);
 
         for (Statement stmt : block.getStatements()) {
             stmt.accept(this);
         }
 
-        currentScope = currentScope.getParent();
+        symbolTableManager.leaveSymbolTable();
     }
 }

@@ -1,7 +1,6 @@
-package compiler.Lexer;
+package compiler;
 
 import compiler.Exceptions.LexerException;
-import compiler.Regex;
 import compiler.Components.Symbol;
 import compiler.Components.Token;
 
@@ -76,7 +75,7 @@ public class Lexer {
                 input.unread(str.charAt(i));
             }
         } catch (IOException e) {
-            throw new LexerException("IO exception during push back");
+            throw new InternalError("IO exception during push back");
         }
     }
 
@@ -93,7 +92,7 @@ public class Lexer {
 
             if (currentCharacter == '\n') currentLine++;
         } catch (IOException e) {
-            throw new LexerException("IO exception while reading a character", currentLine);
+            throw new LexerException("Exception while reading a character", currentLine);
         }
     }
     
@@ -113,25 +112,23 @@ public class Lexer {
 
         StringBuilder lexeme = new StringBuilder(String.valueOf(currentCharacter));
 
-        // string literals
         if (currentCharacter == '"') {
-            readChar();
+            readChar(); // skip the opening quote
+            StringBuilder value = new StringBuilder();
 
             while (!isComplete && currentCharacter != '"') {
-                lexeme.append(currentCharacter);
+                value.append(currentCharacter);
                 readChar();
             }
 
             if (isComplete) {
-                throw new IllegalArgumentException("Unterminated string on the line " + currentLine);
+                throw new LexerException("Unterminated string", currentLine);
             }
 
-            lexeme.append(currentCharacter);
+            readChar(); // skip the closing quote
 
-            readChar();
-
-            return new Symbol(Token.STRING, currentLine, lexeme.toString());
-        }
+            return new Symbol(Token.STRING, currentLine, value.toString());
+    }
 
         readChar();
 
@@ -178,7 +175,7 @@ public class Lexer {
         }
 
         if (candidateSymbol == null) {
-            throw new IllegalArgumentException("Illegal character on the line " + currentLine);
+            throw new LexerException("Illegal character", currentLine);
         }
 
         // push back extra characters

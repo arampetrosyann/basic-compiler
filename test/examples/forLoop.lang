@@ -1,0 +1,9 @@
+fun main() {
+    j int; 
+    for (j, 1, 4, 1) {
+        write("j = ");
+        writeInt(j);
+	writeln("");
+    }
+}
+

@@ -13,6 +13,6 @@ public class ArgumentError extends RuntimeException {
         String errorName = "ArgumentError: ";
         String processedMessage = message.contains(errorName) ? message : errorName + message;
 
-        return lineNumber == null ? processedMessage : processedMessage + " at line " + lineNumber;
+        return lineNumber == null ? processedMessage : processedMessage + " | line number: " + lineNumber;
     }
 }
