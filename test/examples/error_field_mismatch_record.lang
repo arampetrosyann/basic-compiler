@@ -1,0 +1,8 @@
+MyRecord rec {
+    a int;
+    b float;
+}
+
+fun main() {
+    mr MyRecord = MyRecord(1, true);
+}

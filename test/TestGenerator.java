@@ -437,4 +437,87 @@ public class TestGenerator {
             assertTrue("Should compute factorial", result.contains("Factorial is: 120"));
         }
     }
+
+    private String runCompilerOnly(String filename) throws IOException {
+        File file = new File(FILES_DIR, filename);
+        if (!file.exists()) throw new FileNotFoundException("Missing file: " + file);
+
+        return runCommand("./gradlew", "run", "--args=" + file.getPath());
+    }
+
+    @Test
+    public void testMismatchedArgumentType() throws Exception {
+        String output = runCompilerOnly("error_arg_type.lang");
+
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'ArgumentError: Argument 2 type mismatch.'", output.contains("ArgumentError: Argument 2 type mismatch."));
+    }
+
+    @Test
+    public void testErrorWrongNumArgs() throws Exception {
+        String output = runCompilerOnly("error_wrong_num_args.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'ArgumentError: Incorrect number of arguments for function'",
+                output.contains("ArgumentError: Incorrect number of arguments for function"));
+    }
+
+    @Test
+    public void testErrorIndexNonArray() throws Exception {
+        String output = runCompilerOnly("error_index_non_array.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'TypeError: Trying to index a non-array value'",
+                output.contains("TypeError: Trying to index a non-array value"));
+    }
+
+    @Test
+    public void testErrorFieldMismatchRecord() throws Exception {
+        String output = runCompilerOnly("error_field_mismatch_record.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'ArgumentError: Field 2 type mismatch in record constructor MyRecord'",
+                output.contains("ArgumentError: Field 2 type mismatch in record constructor MyRecord"));
+    }
+
+    @Test
+    public void testErrorReturnType() throws Exception {
+        String output = runCompilerOnly("error_return_type.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'ReturnError: Return value and return type don't match'",
+                output.contains("ReturnError: Return value and return type don't match"));
+    }
+
+    @Test
+    public void testErrorLoopStepType() throws Exception {
+        String output = runCompilerOnly("error_loop_step_type.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'TypeError: For loop control variables and bounds must have same type'",
+                output.contains("TypeError: For loop control variables and bounds must have same type"));
+    }
+
+    @Test
+    public void testErrorArrayTypeAssign() throws Exception {
+        String output = runCompilerOnly("error_array_type_assign.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'TypeError: Mismatched types in assignment'",
+                output.contains("TypeError: Mismatched types in assignment"));
+    }
+
+    @Test
+    public void testErrorUnknownType() throws Exception {
+        String output = runCompilerOnly("error_unknown_type.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'TypeError: Unknown record type unknownType'",
+                output.contains("TypeError: Unknown record type unknownType"));
+    }
+
+    @Test
+    public void testErrorUnknownIdentifier() throws Exception {
+        String output = runCompilerOnly("error_unknown_identifier.lang");
+        System.out.println("Program Output:\n" + output);
+        assertTrue("Expected: 'ScopeError: Variable y is not defined'",
+                output.contains("ScopeError: Variable y is not defined"));
+    }
+
+
+
+
 }

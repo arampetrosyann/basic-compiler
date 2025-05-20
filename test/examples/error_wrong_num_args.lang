@@ -1,0 +1,7 @@
+fun add(x int, y int) int {
+    return x + y;
+}
+
+fun main() {
+    result int = add(1);
+}

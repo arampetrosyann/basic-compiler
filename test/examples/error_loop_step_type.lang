@@ -1,0 +1,6 @@
+fun main() {
+    i int;
+    for(i, 0, 10, 0.5) {
+        writeln("Invalid loop");
+    }
+}

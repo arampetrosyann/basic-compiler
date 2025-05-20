@@ -1,0 +1,6 @@
+fun getString() string {
+    return 5;
+}
+fun main() {
+    s string = getString();
+}

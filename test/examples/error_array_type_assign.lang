@@ -1,0 +1,4 @@
+fun main() {
+    arr int[] = array [2] of int;
+    arr[0] = 3.14;
+}
