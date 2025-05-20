@@ -229,7 +229,6 @@ public class Generator {
         generateNegateBoolean();
         generateChr();
         generateFloor();
-        generateLen();
         generateReadInt();
         generateReadFloat();
         generateReadString();
@@ -639,9 +638,8 @@ public class Generator {
                     Opcodes.INVOKESTATIC, className, "readFloat", "()F", false);
             case "readString" -> mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC, className, "readString", "()Ljava/lang/String;", false);
-
             case "write" -> {
-                Expression arg = elem.getArguments().get(0);
+                Expression arg = elem.getArguments().getFirst();
                 VarType argType = analyzer.getType(arg);
                 String descriptor = getTypeDescriptor(argType);
 
@@ -656,9 +654,8 @@ public class Generator {
                     default -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
                 }
             }
-
             case "writeln" -> {
-                Expression arg = elem.getArguments().get(0);
+                Expression arg = elem.getArguments().getFirst();
                 VarType argType = analyzer.getType(arg);
                 String descriptor = getTypeDescriptor(argType);
 
@@ -673,7 +670,6 @@ public class Generator {
                     default -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
                 }
             }
-
             default -> {
                 // Normal function calls
                 for (Expression arg : elem.getArguments()) {
@@ -772,6 +768,22 @@ public class Generator {
                     Opcodes.INVOKESTATIC, className, "readFloat", "()F", false);
             case "readString" -> methodVisitorStack.peek().visitMethodInsn(
                     Opcodes.INVOKESTATIC, className, "readString", "()Ljava/lang/String;", false);
+            case "len" -> {
+                Expression argExpr = elem.getArguments().get(0);
+                VarType argType = analyzer.getType(argExpr);
+
+                generateBlock(argExpr);
+
+                MethodVisitor mv = methodVisitorStack.peek();
+
+                if (argType.equals(PrimitiveType.STRING)) {
+                    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "length", "()I", false);
+                } else if (argType instanceof ArrayType) {
+                    mv.visitInsn(Opcodes.ARRAYLENGTH);
+                } else {
+                    throw new GeneratorException("Unsupported type for len(): " + argType);
+                }
+            }
             default -> methodVisitorStack.peek().visitMethodInsn(
                     Opcodes.INVOKESTATIC,
                     className,

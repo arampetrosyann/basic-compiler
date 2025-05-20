@@ -1,0 +1,27 @@
+$      chr(int)           : turns the character (an int value) into a string, returns a string
+
+$      len(string or array)  : gives the length of a string or array, returns an integer
+
+$      floor(float)    : returns the largest integer less than or equal the float value
+
+fun main() {
+    a int = 65;
+    s string = chr(a);
+    write("s: ");
+    writeln(s);
+
+    str_length int = len(s);
+    write("str_length = ");
+    writeln(str_length);
+
+    arr int[] = array [5] of int;
+
+    arr_length int = len(arr);
+    write("arr_length = ");
+    writeln(arr_length);
+
+    x float = 10.433;
+    x_floor int = floor(x);
+    write("x_floor = ");
+    writeln(x_floor);
+}

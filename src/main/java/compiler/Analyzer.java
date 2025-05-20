@@ -205,8 +205,6 @@ public class Analyzer {
             return functionType.getReturnType();
         }
 
-        System.out.println(paramTypes.size() + "   " + elem.getArguments().size());
-
         if (paramTypes.size() != elem.getArguments().size()) {
             throw new ArgumentError("Incorrect number of arguments for function " + elem.getFunctionName(), elem.getLineNumber());
         }
@@ -248,6 +246,54 @@ public class Analyzer {
 
     public VarType check(CallExpression elem) {
         String name = elem.getType();
+        List<Expression> args = elem.getArguments();
+
+        // Handle built-in functions first
+        switch (name) {
+            case "len" -> {
+                if (args.size() != 1) {
+                    throw new ArgumentError("len expects exactly one argument", elem.getLineNumber());
+                }
+
+                VarType argType = check(args.getFirst());
+
+                boolean isValid = argType.equals(PrimitiveType.STRING) || (argType instanceof ArrayType);
+
+                if (!isValid) {
+                    throw new ArgumentError("len expects a string or an array", elem.getLineNumber());
+                }
+
+                return PrimitiveType.INT;
+            }
+
+
+            case "chr" -> {
+                if (args.size() != 1) {
+                    throw new ArgumentError("chr expects exactly one argument", elem.getLineNumber());
+                }
+
+                VarType argType = check(args.getFirst());
+                if (!argType.equals(PrimitiveType.INT)) {
+                    throw new ArgumentError("chr expects an integer argument", elem.getLineNumber());
+                }
+
+                return PrimitiveType.STRING;
+            }
+
+            case "floor" -> {
+                if (args.size() != 1) {
+                    throw new ArgumentError("floor expects exactly one argument", elem.getLineNumber());
+                }
+
+                VarType argType = check(args.getFirst());
+                if (!argType.equals(PrimitiveType.FLOAT)) {
+                    throw new ArgumentError("floor expects a float argument", elem.getLineNumber());
+                }
+
+                return PrimitiveType.INT;
+            }
+        }
+
         VarType lookedUp = symbolTableManager.lookup(name);
 
         if (lookedUp instanceof FunctionType functionType) {
@@ -269,7 +315,6 @@ public class Analyzer {
             return functionType.getReturnType();
         } else if (lookedUp instanceof RecordType recordType) {
             Map<String, VarType> fields = recordType.getFields();
-            List<Expression> args = elem.getArguments();
 
             if (fields.size() != args.size()) {
                 throw new ArgumentError("Wrong number of arguments for record constructor " + name, elem.getLineNumber());

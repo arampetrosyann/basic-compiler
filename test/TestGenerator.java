@@ -255,6 +255,18 @@ public class TestGenerator {
     }
 
     @Test
+    public void testChrFloorLen() throws Exception {
+        String output = compileAndRunLangProgram("chr_floor_len.lang");
+
+        System.out.println("Program Output:\n" + output);
+
+        assertTrue("Expected 's: A'", output.contains("s: A"));
+        assertTrue("Expected 'str_length = 1'", output.contains("str_length = 1"));
+        assertTrue("Expected 'arr_length = 5'", output.contains("arr_length = 5"));
+        assertTrue("Expected 'x_floor = 10'", output.contains("x_floor = 10"));
+    }
+
+    @Test
     public void testReadInt() throws Exception {
         String simulatedInput = "42\n";
         compileLangFile("readInt.lang");
