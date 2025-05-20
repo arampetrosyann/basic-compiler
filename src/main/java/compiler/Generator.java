@@ -3,6 +3,9 @@ package compiler;
 import compiler.Components.Semantic.*;
 import compiler.Components.SymbolTableManager;
 import compiler.Exceptions.GeneratorException;
+import compiler.Exceptions.Semantic.OperatorError;
+import compiler.Exceptions.Semantic.ReturnError;
+import compiler.Exceptions.Semantic.ScopeError;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -415,7 +418,7 @@ public class Generator {
 
             VarType arrayType = analyzer.getType(access.getArrayExpr());
             if (!(arrayType instanceof ArrayType array)) {
-                throw new GeneratorException("Expected array type but found: " + arrayType);
+                throw new TypeError("Expected array type but found: " + arrayType, elem.getLineNumber());
             }
 
             VarType elemType = array.getElementType();
@@ -431,7 +434,7 @@ public class Generator {
             return;
         }
 
-        throw new GeneratorException("Unsupported assignment target: " + target.getClass().getSimpleName());
+        throw new GeneratorException("Unsupported assignment target: " + target.getClass().getSimpleName(), elem.getLineNumber());
     }
 
     public void generateBlock(BinaryExpression elem) {
@@ -462,7 +465,7 @@ public class Generator {
                 case GREATER_OR_EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPGE, trueLabel);
                 case EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPEQ, trueLabel);
                 case NOT_EQUAL -> mv.visitJumpInsn(Opcodes.IF_ICMPNE, trueLabel);
-                default -> throw new GeneratorException("Unsupported integer comparison: " + op);
+                default -> throw new GeneratorException("Unsupported integer comparison: " + op, elem.getLineNumber());
             }
 
             mv.visitInsn(Opcodes.ICONST_0); // false
@@ -506,7 +509,7 @@ public class Generator {
                     case MULTIPLY -> mv.visitInsn(Opcodes.IMUL);
                     case DIVIDE -> mv.visitInsn(Opcodes.IDIV);
                     case MODULO -> mv.visitInsn(Opcodes.IREM);
-                    default -> throw new GeneratorException("Unsupported int operator: " + op);
+                    default -> throw new OperatorError("Unsupported int operator: " + op, elem.getLineNumber());
                 }
             }
 
@@ -517,7 +520,7 @@ public class Generator {
                     case MULTIPLY -> mv.visitInsn(Opcodes.FMUL);
                     case DIVIDE -> mv.visitInsn(Opcodes.FDIV);
                     case MODULO -> mv.visitInsn(Opcodes.FREM);
-                    default -> throw new GeneratorException("Unsupported float operator: " + op);
+                    default -> throw new OperatorError("Unsupported float operator: " + op, elem.getLineNumber());
                 }
             }
 
@@ -548,11 +551,11 @@ public class Generator {
                         mv.visitLabel(endLabel);
                     }
 
-                    default -> throw new GeneratorException("Unsupported bool operator: " + op);
+                    default -> throw new OperatorError("Unsupported bool operator: " + op, elem.getLineNumber());
                 }
             }
 
-            default -> throw new GeneratorException("Unsupported operand type in binary expression: " + operandType);
+            default -> throw new GeneratorException("Unsupported operand type in binary expression: " + operandType, elem.getLineNumber());
         }
     }
 
@@ -614,7 +617,7 @@ public class Generator {
 
         VarType arrayType = analyzer.getType(elem.getArrayExpr());
         if (!(arrayType instanceof ArrayType array)) {
-            throw new GeneratorException("Expected array type but found: " + arrayType);
+            throw new TypeError("Expected array type but found: " + arrayType, elem.getLineNumber());
         }
 
         VarType elemType = array.getElementType();
@@ -719,7 +722,7 @@ public class Generator {
                 case 'I', 'Z' -> methodVisitorStack.peek().visitInsn(Opcodes.IRETURN); // int, bool
                 case 'F' -> methodVisitorStack.peek().visitInsn(Opcodes.FRETURN);     // float
                 case 'L', '[' -> methodVisitorStack.peek().visitInsn(Opcodes.ARETURN); // record, string, array
-                default -> throw new GeneratorException("Unsupported return type: " + descriptor);
+                default -> throw new ReturnError("Unsupported return type: " + descriptor, elem.getLineNumber());
             }
         } else {
             methodVisitorStack.peek().visitInsn(Opcodes.RETURN);
@@ -814,7 +817,7 @@ public class Generator {
         VarType varType = symbolTableManager.lookup(elem.getName());
 
         if (varType == null) {
-            throw new GeneratorException("Variable '" + elem.getName() + "' not found in scope");
+            throw new ScopeError("Variable '" + elem.getName() + "' not found in scope", elem.getLineNumber());
         }
 
         String typeDescriptor = getTypeDescriptor(varType);
@@ -1049,7 +1052,7 @@ public class Generator {
                 mv.visitInsn(Opcodes.FCMPG);
                 mv.visitJumpInsn(Opcodes.IFGE, loopEnd);
             }
-            default -> throw new GeneratorException("Unsupported for-loop type: " + varType.getName());
+            default -> throw new TypeError("Unsupported for-loop type: " + varType.getName(), elem.getLineNumber());
         }
 
         generateBlock(elem.getBody());
@@ -1061,7 +1064,7 @@ public class Generator {
         switch (varType.getName()) {
             case INTEGER -> mv.visitInsn(Opcodes.IADD);
             case FLOAT -> mv.visitInsn(Opcodes.FADD);
-            default -> throw new GeneratorException("Unsupported for-loop type: " + varType.getName());
+            default -> throw new TypeError("Unsupported for-loop type: " + varType.getName(), elem.getLineNumber());
         }
 
         mv.visitVarInsn(storeOpcode, slot); // store updated iterator variable
