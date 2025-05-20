@@ -1,0 +1,6 @@
+fun main() {
+    write("Enter a float x: ");
+    x float = readFloat();
+    write("-x = ");
+    writeFloat(-x);
+}

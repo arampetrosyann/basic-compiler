@@ -194,22 +194,12 @@ public class Analyzer {
                 throw new ArgumentError("writeln expects exactly one argument", elem.getLineNumber());
             }
 
-            VarType argType = check(elem.getArguments().getFirst());
-            if (!(argType instanceof PrimitiveType)) {
-                throw new ArgumentError("writeln only accepts primitive types", elem.getLineNumber());
-            }
-
             return functionType.getReturnType();
         }
 
         if (name.equals("write")) {
             if (elem.getArguments().size() != 1) {
                 throw new ArgumentError("write expects exactly one argument", elem.getLineNumber());
-            }
-
-            VarType argType = check(elem.getArguments().getFirst());
-            if (!PrimitiveType.STRING.equals(argType)) {
-                throw new ArgumentError("write only accepts string", elem.getLineNumber());
             }
 
             return functionType.getReturnType();

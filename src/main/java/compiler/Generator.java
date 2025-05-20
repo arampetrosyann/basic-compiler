@@ -225,30 +225,6 @@ public class Generator {
         mv.visitEnd();
     }
 
-    private void generateWrite() {
-        MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "write", "(Ljava/lang/String;)V", null, null);
-
-        mv.visitCode();
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
-        mv.visitInsn(Opcodes.RETURN);
-        mv.visitMaxs(0, 0);
-        mv.visitEnd();
-    }
-
-    private void generateWriteln() {
-        MethodVisitor mv = classWriter.visitMethod(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "writeln", "(Ljava/lang/String;)V", null, null);
-
-        mv.visitCode();
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
-        mv.visitInsn(Opcodes.RETURN);
-        mv.visitMaxs(0, 0);
-        mv.visitEnd();
-    }
-
     private void generateBuiltInFunctions() {
         generateNegateBoolean();
         generateChr();
@@ -259,10 +235,7 @@ public class Generator {
         generateReadString();
         generateWriteInt();
         generateWriteFloat();
-        generateWrite();
-        generateWriteln();
     }
-    //
 
     private String mapToPrimitive(String id) {
         return switch (id.toLowerCase()) {
@@ -501,6 +474,31 @@ public class Generator {
             return;
         }
 
+        if (resultTypeName == TypeName.BOOLEAN && operandType == TypeName.FLOAT) {
+            Label trueLabel = new Label();
+            Label endLabel = new Label();
+
+            mv.visitInsn(Opcodes.FCMPL);
+
+            switch (op) {
+                case LESS -> mv.visitJumpInsn(Opcodes.IFLT, trueLabel);
+                case GREATER -> mv.visitJumpInsn(Opcodes.IFGT, trueLabel);
+                case EQUAL -> mv.visitJumpInsn(Opcodes.IFEQ, trueLabel);
+                case NOT_EQUAL -> mv.visitJumpInsn(Opcodes.IFNE, trueLabel);
+                case LESS_OR_EQUAL -> mv.visitJumpInsn(Opcodes.IFLE, trueLabel);
+                case GREATER_OR_EQUAL -> mv.visitJumpInsn(Opcodes.IFGE, trueLabel);
+                default -> throw new GeneratorException("Unsupported float comparison: " + op);
+            }
+
+            mv.visitInsn(Opcodes.ICONST_0); // false
+            mv.visitJumpInsn(Opcodes.GOTO, endLabel);
+            mv.visitLabel(trueLabel);
+            mv.visitInsn(Opcodes.ICONST_1); // true
+            mv.visitLabel(endLabel);
+            return;
+        }
+
+
         switch (operandType) {
             case INTEGER -> {
                 switch (op) {
@@ -631,22 +629,65 @@ public class Generator {
     }
 
     public void generateBlock(FunctionCall elem) {
-        for (Expression arg : elem.getArguments()) {
-            generateBlock(arg);
-        }
-
         String name = elem.getFunctionName();
+        MethodVisitor mv = methodVisitorStack.peek();
 
-        // Also handle built-in read functions
         switch (name) {
-            case "readInt" -> methodVisitorStack.peek().visitMethodInsn(
+            case "readInt" -> mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC, className, "readInt", "()I", false);
-            case "readFloat" -> methodVisitorStack.peek().visitMethodInsn(
+            case "readFloat" -> mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC, className, "readFloat", "()F", false);
-            case "readString" -> methodVisitorStack.peek().visitMethodInsn(
+            case "readString" -> mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC, className, "readString", "()Ljava/lang/String;", false);
-            default -> methodVisitorStack.peek().visitMethodInsn(
-                    Opcodes.INVOKESTATIC, className, name, getMethodDescriptor(elem), false);
+
+            case "write" -> {
+                Expression arg = elem.getArguments().get(0);
+                VarType argType = analyzer.getType(arg);
+                String descriptor = getTypeDescriptor(argType);
+
+                mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+                generateBlock(arg);
+
+                switch (descriptor) {
+                    case "I" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false);
+                    case "Z" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Z)V", false);
+                    case "F" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(F)V", false);
+                    case "Ljava/lang/String;" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+                    default -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
+                }
+            }
+
+            case "writeln" -> {
+                Expression arg = elem.getArguments().get(0);
+                VarType argType = analyzer.getType(arg);
+                String descriptor = getTypeDescriptor(argType);
+
+                mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+                generateBlock(arg);
+
+                switch (descriptor) {
+                    case "I" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false);
+                    case "F" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(F)V", false);
+                    case "Z" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Z)V", false);
+                    case "Ljava/lang/String;" -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+                    default -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+                }
+            }
+
+            default -> {
+                // Normal function calls
+                for (Expression arg : elem.getArguments()) {
+                    generateBlock(arg);
+                }
+
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        className,
+                        name,
+                        getMethodDescriptor(elem),
+                        false
+                );
+            }
         }
     }
 
@@ -887,7 +928,13 @@ public class Generator {
         generateBlock(elem.getOperand());
 
         if (Objects.requireNonNull(elem.getOperator()) == Token.SUBTRACT) {
-            methodVisitorStack.peek().visitInsn(Opcodes.INEG);
+            VarType type = analyzer.getType(elem.getOperand());
+
+            switch (type.getName()) {
+                case INTEGER -> methodVisitorStack.peek().visitInsn(Opcodes.INEG);
+                case FLOAT -> methodVisitorStack.peek().visitInsn(Opcodes.FNEG);
+                default -> throw new GeneratorException("Unsupported unary negation for type: " + type.getName());
+            }
         }
     }
 

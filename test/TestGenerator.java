@@ -129,6 +129,15 @@ public class TestGenerator {
     }
 
     @Test
+    public void testWhileLoopFloat() throws Exception {
+        String output = compileAndRunLangProgram("whileLoopFloat.lang");
+
+        System.out.println("Program Output:\n" + output);
+
+        assertTrue("Expected 'i = 4.5'", output.contains("i = 4.5"));
+    }
+
+    @Test
     public void testDoWhileLoop() throws Exception {
         String output = compileAndRunLangProgram("doWhileLoop.lang");
 
@@ -163,7 +172,11 @@ public class TestGenerator {
 
         System.out.println("Program Output:\n" + output);
 
-        assertTrue("Expected 'x = 4'", output.contains("x = 4"));
+        assertTrue("Expected 'a[0] = 0'", output.contains("a[0] = 0"));
+        assertTrue("Expected 'a[1] = 2'", output.contains("a[1] = 2"));
+        assertTrue("Expected 'a[2] = 4'", output.contains("a[2] = 4"));
+        assertTrue("Expected 'a[3] = 6'", output.contains("a[3] = 6"));
+        assertTrue("Expected 'a[4] = 8'", output.contains("a[4] = 8"));
     }
 
     @Test
@@ -214,6 +227,31 @@ public class TestGenerator {
         assertTrue("Expected 'James'", output.contains("James"));
         assertTrue("Expected 'Jimmy'", output.contains("Jimmy"));
         assertTrue("Expected 'Jack'", output.contains("Jack"));
+    }
+
+    @Test
+    public void testOperationsFloat() throws Exception {
+        String output = compileAndRunLangProgram("operationsFloat.lang");
+
+        System.out.println("Program Output:\n" + output);
+
+        assertTrue("Expected 'b = 15.43'", output.contains("b = 15.43"));
+        assertTrue("Expected 'c = 160.9349'", output.contains("c = 160.9349"));
+        assertTrue("Expected 'd = 0.6759'", output.contains("d = 0.6759"));
+        assertTrue("Expected 'e = -5.0'", output.contains("e = -5.0"));
+        assertTrue("Expected 'g = 8.5'", output.contains("g = 8.5"));
+    }
+
+    @Test
+    public void testWriteAndWriteln() throws Exception {
+        String output = compileAndRunLangProgram("writeAndWriteln.lang");
+
+        System.out.println("Program Output:\n" + output);
+
+        assertTrue("Expected 'a = 10.43'", output.contains("a = 10.43"));
+        assertTrue("Expected 'b = 43'", output.contains("b = 43"));
+        assertTrue("Expected 'c = true'", output.contains("c = true"));
+        assertTrue("Expected 'Hello'", output.contains("Hello"));
     }
 
     @Test
@@ -279,6 +317,39 @@ public class TestGenerator {
 
             System.out.println("Program Output:\n" + result);
             assertTrue(result.contains("You entered: 3.14"));
+        }
+    }
+
+    @Test
+    public void testWriteFloat() throws Exception {
+        String simulatedInput = "3.14\n";
+        compileLangFile("writeFloat.lang");
+
+        ProcessBuilder pb = new ProcessBuilder("java", "test");
+        pb.directory(new File("."));
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+        ) {
+            writer.write(simulatedInput);
+            writer.flush();
+
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            assertEquals(0, exitCode);
+            String result = output.toString();
+
+            System.out.println("Program Output:\n" + result);
+            assertTrue(result.contains("-x = -3.14"));
         }
     }
 

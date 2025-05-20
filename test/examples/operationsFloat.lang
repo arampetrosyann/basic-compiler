@@ -1,0 +1,27 @@
+fun main() {
+    a float = 10.43;
+    b float = a + 5.0;
+
+    c float = a * b;
+    d float = a / b;
+    e float = a - b;
+
+    f float = 92.5;
+    g float = f % 10.5;
+
+    write("b = ");
+    writeFloat(b);
+    writeln("");
+    write("c = ");
+    writeFloat(c);
+    writeln("");
+    write("d = ");
+    writeFloat(d);
+    writeln("");
+    write("e = ");
+    writeFloat(e);
+    writeln("");
+    write("g = ");
+    writeFloat(g);
+    writeln("");
+}

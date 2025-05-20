@@ -1,0 +1,33 @@
+fun main() {
+    a float = 10.43;
+
+    write("a = ");
+    write(a);
+    writeln("");
+    writeln(a);
+
+    b int = 43;
+
+    write("b = ");
+    write(b);
+    writeln("");
+    writeln(b);
+
+    c bool = true;
+    write("c = ");
+    write(c);
+    writeln("");
+    writeln(c);
+
+    writeln("Hello");
+
+    arr int[] = array [2] of int;
+
+    i int;
+    for(i, 0, 2, 1) {
+        arr[i] = i * 2;
+    }
+
+    writeln(arr[0]);
+    write(arr);
+}

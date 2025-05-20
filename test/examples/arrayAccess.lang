@@ -4,10 +4,9 @@ fun main() {
     i int;
     for(i, 0, 5, 1) {
         a[i] = i * 2;
+        write("a[");
+        write(i);
+        write("] = ");
+        writeln(a[i]);
     }
-
-    x int = a[2];
-
-    write("x = ");
-    writeInt(x);
 }

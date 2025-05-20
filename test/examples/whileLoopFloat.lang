@@ -1,0 +1,9 @@
+fun main() {
+    i float = 0.0;
+    while (i < 4.5) {
+        i = i + 0.5;
+    }
+
+    write("i = ");
+    writeFloat(i);
+}
